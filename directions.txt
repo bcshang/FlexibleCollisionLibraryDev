@@ -1,0 +1,25 @@
+
+Follow FCL README Instructions (install libccd, optionally octomap, then install fcl)
+
+Copy CMakeLists.txt
+
+BVH = bounded volume hierarchy - tree structure that divides objects into bounding groups (boxes) to help separate them
+
+AABB = axis-aligned bounding box (minimum bounding box such that the edges are parallel to the cartesian axes)
+
+OBB = oriented bounding box
+
+RSS - rectangle sphere swept bounding volume
+
+SAP - sweep and prune
+
+Questions:
+    - Is there a nice way to find the meshes already parsed for valkyrie?
+    - Else what library should I use to parse it?
+
+
+TODO:
+    1. difference between different types of bounding boxes and their uses
+
+
+
