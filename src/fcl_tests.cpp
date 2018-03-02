@@ -58,7 +58,8 @@ fcl::CollisionObject<double>* generateObstacle(sejong::Vect3 location, double si
 
 void colliderCallback(const geometry_msgs::Pose& msg) {
   delete colliderObstacle;
-  colliderObstacle = generateObstacle(sejong::Vect3(msg.position.x, msg.position.y, msg.position.z), sizeBox);
+  // need to fix for how fcl vs ros denotes markers
+  colliderObstacle = generateObstacle(sejong::Vect3(msg.position.x, msg.position.y, msg.position.z-sizeBox), sizeBox);
 }
 
 
