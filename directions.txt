@@ -19,7 +19,6 @@ Questions:
 
 
 TODO:
-    1. difference between different types of bounding boxes and their uses
-
+    1. I have no idea how FCL decides to draw the shapes (like in what direction and such)
 
 

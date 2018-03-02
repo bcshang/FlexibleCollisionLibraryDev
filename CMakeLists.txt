@@ -11,11 +11,12 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  visualization_msgs
+  interactive_markers
 )
 
 find_package(cmake_modules REQUIRED)
 find_package(Eigen REQUIRED)
-
 
 catkin_package()
 
@@ -52,9 +53,12 @@ include_directories(${Sejong_Eigen_Path})
 set(${FCL_TESTING}_SOURCES 
     src/fcl_tests.cpp
     src/test_fcl_utility.h
+    src/markerGeneration.cpp
   )
 
 add_executable(fcl_tests ${${FCL_TESTING}_SOURCES})
+add_executable(collisionMarker src/interactiveMarker.cpp)
+
 
 target_link_libraries(fcl_tests 
     ${catkin_LIBRARIES} 
@@ -65,4 +69,5 @@ target_link_libraries(fcl_tests
     ${SJrbdl}
     )
 
+target_link_libraries(collisionMarker ${catkin_LIBRARIES})
 #    ${my_libValkyrie_model}
