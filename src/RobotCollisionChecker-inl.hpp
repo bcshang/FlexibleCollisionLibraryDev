@@ -26,6 +26,10 @@ RobotCollisionChecker<S>::RobotCollisionChecker(sejong::Vector& m_q, sejong::Vec
   robot_qdot = new sejong::Vector(m_qdot);
 
   robot_model->UpdateModel(*robot_q, *robot_qdot);  
+
+   // Declare a sweep and prune collision manager (mentioned in the research paper specifically for ROS?)
+  robotCollisionModel = new fcl::SaPCollisionManager<S>();
+  robotCollisionModel->setup();
 }
 
 /**
@@ -69,8 +73,7 @@ void RobotCollisionChecker<S>::generateRobotCollisionModel() {
   fcl::Transform3<S> *shinTransform = new fcl::Transform3<S>(fcl::Translation3<S>(*left_foot_pos));
   
   
-  // Declare a sweep and prune collision manager (mentioned in the research paper specifically for ROS?)
-  robotCollisionModel = new fcl::SaPCollisionManager<S>();
+ 
 
 
   // Create collision objects to place into a model
@@ -87,12 +90,14 @@ void RobotCollisionChecker<S>::generateRobotCollisionModel() {
 
   env.push_back(linkCollisionObject);
 
+  robotCollisionModel->clear();
 
   // add the collision object to the model collider
   robotCollisionModel->registerObjects(env);
-
+  
   // Initialize the manager
-  robotCollisionModel->setup();
+  robotCollisionModel->update();
+ 
 
 }
 
@@ -113,7 +118,7 @@ std::vector<fcl::Contact<S>> RobotCollisionChecker<S>::collideWith(fcl::Collisio
   
   // Grab all contact data
   std::vector<fcl::Contact<S>> contacts;
-  colData->result.getContacts(contacts);
+  colData.result.getContacts(contacts);
 
   return contacts;
 }
