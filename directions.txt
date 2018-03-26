@@ -21,4 +21,4 @@ Questions:
 TODO:
     1. I have no idea how FCL decides to draw the shapes (like in what direction and such)
 
-
+pick the yaw for joints to get orientation

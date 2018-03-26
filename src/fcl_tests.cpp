@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <math.h>
+#include <cstring>
 
 // ROS things
 #include <ros/ros.h>
@@ -22,6 +23,7 @@
 #include "fcl/geometry/shape/cylinder.h"
 #include "fcl/geometry/shape/box.h"
 #include "fcl/geometry/geometric_shape_to_BVH_model.h"
+#include "fcl/narrowphase/collision_result.h"
 
 #include "test_fcl_utility.h"
 
@@ -34,8 +36,119 @@
 // Helpful things
 #include "markerGeneration.hpp"
 
+
 #define NODE_RATE 15
 #define sizeBox .25
+
+
+template <typename S>
+class CollisionChecker{
+public:
+  CollisionChecker();
+
+  CollisionChecker(sejong::Vector& m_q, sejong::Vector& m_qdot);
+  
+  ~CollisionChecker();
+
+  RobotModel* robot_model;
+  sejong::Vector* robot_q;
+  sejong::Vector* robot_qdot;
+  fcl::BroadPhaseCollisionManager<S> *robotCollisionModel; 
+
+  void generateRobotCollisionModel();
+
+};
+
+template <typename S>
+CollisionChecker<S>::CollisionChecker(){};
+
+template <typename S>
+CollisionChecker<S>::CollisionChecker(sejong::Vector& m_q, sejong::Vector& m_qdot){
+  
+  robot_model = RobotModel::GetRobotModel();  
+  robot_q = new sejong::Vector(m_q);
+  robot_qdot = new sejong::Vector(m_qdot);
+
+  robot_model->UpdateModel(*robot_q, *robot_qdot);  
+
+}
+
+template <typename S>
+CollisionChecker<S>::~CollisionChecker(){
+  delete robot_q; 
+  delete robot_qdot;
+}
+
+template <typename S>
+void CollisionChecker<S>::generateRobotCollisionModel() {
+
+  sejong::Vect3 *left_knee_pos = new sejong::Vect3();
+  sejong::Vect3 *left_foot_pos = new sejong::Vect3();
+  
+  // Shin
+  robot_model->getPosition(*robot_q, SJLinkID::LK_leftKneePitchLink, *left_knee_pos);
+  robot_model->getPosition(*robot_q, SJLinkID::LK_leftCOP_Frame, *left_foot_pos);
+
+  // Print out the calculated location of the joints
+  //sejong::pretty_print(left_foot_pos, std::cout, "left_foot_pos");  
+  //sejong::pretty_print(left_knee_pos, std::cout, "left_knee_pos");  
+
+
+  sejong::Quaternion leftKneePitchQuat;
+  robot_model->getOrientation(*robot_q, SJLinkID::LK_leftKneePitchLink, leftKneePitchQuat);
+  // sejong::pretty_print(leftKneePitchQuat, std::cout, "Left Knee Pitch Quaternion");
+
+  double dist = calcDistance(*left_foot_pos, *left_knee_pos);
+  
+  // Create a cylinder to mock the shin
+  fcl::Cylinder<S> *shinCyl = new fcl::Cylinder<S>(.10, dist);
+
+  // Declare bounded volume heierarchy model with oriented bounding box + rectangular sphere swept
+  fcl::BVHModel<fcl::OBBRSS<S>> *shinModel = new fcl::BVHModel<fcl::OBBRSS<S>>();
+
+  // Not sure, but hopefully this places the cylinder where the shin should be
+  fcl::Transform3<S> *shinTransform = new fcl::Transform3<S>(fcl::Translation3<S>(*left_foot_pos));
+
+  // Populate shin model with the declared cylinder
+  // generateBVHModel(*shinModel, shinCyl, shinTransform, 16, 16);
+
+  
+  
+  // Declare a sweep and prune collision manager (mentioned in the research paper specifically for ROS?)
+  robotCollisionModel = new fcl::SaPCollisionManager<S>();
+
+
+  // Create collision objects to place into a model
+  std::vector<fcl::CollisionObject<S>*> env;
+
+  std::string *s = new std::string("leftShin");
+
+  // name the joint
+  std::shared_ptr<fcl::CollisionGeometry<S>> shinGeom(shinCyl);
+  shinGeom->setUserData(s);
+
+  fcl::CollisionObject<S>* linkCollisionObject = new fcl::CollisionObject<S>(shinGeom, *shinTransform);
+  linkCollisionObject->setUserData(s);
+
+  env.push_back(linkCollisionObject);
+
+
+  // add the collision object to the model collider
+  robotCollisionModel->registerObjects(env);
+
+  // Initialize the manager
+  robotCollisionModel->setup();
+
+}
+
+
+
+
+
+
+
+
+
 
 fcl::CollisionObject<double> *colliderObstacle;
 
@@ -77,27 +190,13 @@ int main(int argc, char** argv) {
 
 
   // Get Valkyrie information
-  RobotModel* valkyrie_model = RobotModel::GetRobotModel();
-
   sejong::Vector m_q; m_q.resize(NUM_Q); m_q.setZero();
   sejong::Vector m_qdot; m_qdot.resize(NUM_QDOT); m_qdot.setZero();
 
-
   m_q[NUM_QDOT] = 1.0;
 
-  valkyrie_model->UpdateModel(m_q, m_qdot);  
-
-  sejong::Vect3 left_knee_pos;
-  sejong::Vect3 left_foot_pos;
-  
-  valkyrie_model->getPosition(m_q, SJLinkID::LK_leftKneePitchLink, left_knee_pos);
-  valkyrie_model->getPosition(m_q, SJLinkID::LK_leftCOP_Frame, left_foot_pos);
-
-  // Print out the calculated location of the joints
-  sejong::pretty_print(left_foot_pos, std::cout, "left_foot_pos");  
-  sejong::pretty_print(left_knee_pos, std::cout, "left_knee_pos");  
-
-
+  CollisionChecker<double> *valkyrie_collision_checker = new CollisionChecker<double>(m_q, m_qdot);
+  valkyrie_collision_checker->generateRobotCollisionModel();
 
 
   // Variable size array
@@ -106,7 +205,7 @@ int main(int argc, char** argv) {
   // create markers based on the calculated link positions
   //markerVector.push_back(createMarker(left_foot_pos));
   //markerVector.push_back(createMarker(left_knee_pos));
-  markerVector.push_back(createCylinder(left_foot_pos, left_knee_pos));
+  //markerVector.push_back(createCylinder(left_foot_pos, left_knee_pos));
 
   // Set up array markers message
   visualization_msgs::MarkerArray markerArray;
@@ -118,48 +217,9 @@ int main(int argc, char** argv) {
   }
 
 
-
-
-  /* Start FCL Things */
-  // Create FCL things
-  double dist = calcDistance(left_foot_pos, left_knee_pos);
-  std::cout << "Shin length: " << dist << std::endl;
-
-  // Create a cylinder to mock the shin
-  fcl::Cylinder<double> shinCyl(.10, dist);
-
-  // Declare bounded volume heierarchy model with oriented bounding box + rectangular sphere swept
-  fcl::BVHModel<fcl::OBBRSS<double>> *shinModel = new fcl::BVHModel<fcl::OBBRSS<double>>();
-
-  // Not sure, but hopefully this places the cylinder where the shin should be
-  fcl::Transform3<double> shinTransform = fcl::Transform3<double>(fcl::Translation3<double>(left_foot_pos));
-
-  // Populate shin model with the declared cylinder
-  // generateBVHModel(*shinModel, shinCyl, shinTransform, 16, 16);
-
+  
   // temporary declaration
   colliderObstacle = generateObstacle(sejong::Vect3(100, 100, 100), .25);
-  
-  // Declare a sweep and prune collision manager (mentioned in the research paper specifically for ROS?)
-  fcl::BroadPhaseCollisionManager<double> *modelCollider = new fcl::SaPCollisionManager<double>();
-
-
-  // Create collision objects to place into a model
-  std::vector<fcl::CollisionObject<double>*> env;
-  env.push_back(new fcl::CollisionObject<double>(std::shared_ptr<fcl::CollisionGeometry<double>>(&shinCyl), shinTransform));
-
-
-  // add the collision object to the model collider
-  modelCollider->registerObjects(env);
-
-  // Initialize the manager
-  modelCollider->setup();
-
-  // returns information about our collision
-  
-
-  // Run the entire model against the collision object to figure out if there is a collision
-  // Collision data will return in the colData variable
  
 
  
@@ -171,8 +231,21 @@ int main(int argc, char** argv) {
     
     ros::spinOnce();
     fcl::test::CollisionData<double> *colData = new fcl::test::CollisionData<double>();
-    modelCollider->collide(colliderObstacle, colData, fcl::test::defaultCollisionFunction);
-    std::cout << "There are " << colData->result.numContacts() << " collisions, yay!" << std::endl;
+    valkyrie_collision_checker->robotCollisionModel->collide(colliderObstacle, colData, fcl::test::defaultCollisionFunction);
+    
+    std::vector<fcl::Contact<double>> collisionContacts;
+    colData->result.getContacts(collisionContacts);
+    if(collisionContacts.size() > 0) {
+      fcl::Contact<double> con = collisionContacts[0];
+      std::cout << con.o1->getUserData() << std::endl;
+      std::cout << *((std::string*)con.o2->getUserData()) << std::endl;
+      std::cout << "Blarg" << std::endl;
+    }
+
+    //if(colData->result.isCollision())
+      //std::cout << "Colliding with: " << colData->result.getContact(0).o1->getUserData() << " collisions, yay!" << std::endl;
+    
+
     delete colData;
     r.sleep();
   }
