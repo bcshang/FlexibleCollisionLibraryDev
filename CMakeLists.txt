@@ -54,7 +54,7 @@ set(${FCL_TESTING}_SOURCES
     src/fcl_tests.cpp
     src/test_fcl_utility.h
     src/markerGeneration.cpp
-    src/RobotCollisionChecker.hpp
+    src/RobotCollisionChecker-inl.hpp
     src/helpfulMath.cpp
   )
 
