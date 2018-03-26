@@ -13,12 +13,9 @@ RSS - rectangle sphere swept bounding volume
 
 SAP - sweep and prune
 
-Questions:
-    - Is there a nice way to find the meshes already parsed for valkyrie?
-    - Else what library should I use to parse it?
-
 
 TODO:
     1. I have no idea how FCL decides to draw the shapes (like in what direction and such)
 
 pick the yaw for joints to get orientation
+
