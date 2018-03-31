@@ -78,6 +78,9 @@ int main(int argc, char** argv) {
   ros::init(argc, argv, "fcl_tests");
   ros::NodeHandle n;
 
+  // temporary declaration
+  colliderObstacle = generateObstacle(sejong::Vect3(100, 100, 100), .25);
+
   ros::Publisher marker_pub = n.advertise<visualization_msgs::MarkerArray>("visualization_marker_array", 1);
   ros::Subscriber sub = n.subscribe("interactiveMarker", 10, colliderCallback);
   ros::Rate r(NODE_RATE);
@@ -91,8 +94,9 @@ int main(int argc, char** argv) {
   m_q[NUM_QDOT] = 1.0;
 
   RobotCollisionChecker<double> *valkyrie_collision_checker = new RobotCollisionChecker<double>(m_q, m_qdot);
+  std::cout << "Robot collision Checker generated" << std::endl;
   valkyrie_collision_checker->generateRobotCollisionModel();
-
+  std::cout << "Valkyrie FCL Model Constructed" << std::endl;
 
   // Variable size array
   std::vector<visualization_msgs::Marker> markerVector;
@@ -112,13 +116,7 @@ int main(int argc, char** argv) {
   }
 
 
-  
-  // temporary declaration
-  colliderObstacle = generateObstacle(sejong::Vect3(100, 100, 100), .25);
- 
-
- 
-
+  std::cout << "ROS Loop start" << std::endl;
   while(ros::ok()) {
 
     // Publish the marker array
@@ -126,14 +124,17 @@ int main(int argc, char** argv) {
     
     ros::spinOnce();
 
+    // std::cout << "Debug1" << std::endl;
     std::vector<fcl::Contact<double>> collisionContacts = valkyrie_collision_checker->collideWith(colliderObstacle);
+    // std::cout << "Debug2" << std::endl;
     
     if(collisionContacts.size() > 0) {
       fcl::Contact<double> con = collisionContacts[0];
       std::cout << *((std::string*)con.o1->getUserData()) << std::endl;
-      std::cout << *((std::string*)con.o2->getUserData()) << std::endl;
+      std::cout << ((CollisionLink<double>*)con.o2->getUserData())->link1 << std::endl;
       std::cout << "Blarg" << std::endl;
     }
+    // std::cout << "Debug3" << std::endl;
     r.sleep();
   }
 

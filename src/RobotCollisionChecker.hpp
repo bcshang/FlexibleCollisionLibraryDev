@@ -12,22 +12,25 @@
 #include "fcl/geometry/shape/cylinder.h"
 #include "fcl/geometry/shape/box.h"
 #include "fcl/narrowphase/collision_result.h"
-
+#include "CollisionLink.hpp"
 #include "helpfulMath.hpp"
 
 template <typename S>
 class RobotCollisionChecker{
 public:
+
+  RobotModel* robot_model;
+  sejong::Vector* robot_q;
+  sejong::Vector* robot_qdot;
+  fcl::BroadPhaseCollisionManager<S> *robotCollisionModel; 
+  std::vector<fcl::CollisionObject<S>*> robot_env;
+  std::vector<CollisionLink<S>> collisionLinks;
   RobotCollisionChecker();
 
   RobotCollisionChecker(sejong::Vector& m_q, sejong::Vector& m_qdot);
   
   ~RobotCollisionChecker();
 
-  RobotModel* robot_model;
-  sejong::Vector* robot_q;
-  sejong::Vector* robot_qdot;
-  fcl::BroadPhaseCollisionManager<S> *robotCollisionModel; 
 
   /**
    * Recompute internal BroadPhaseCollisionManager to run collisions against objects
