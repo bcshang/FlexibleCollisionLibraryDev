@@ -36,7 +36,7 @@
 #include "markerGeneration.hpp"
 
 
-#define NODE_RATE 15
+#define NODE_RATE 10
 #define sizeBox .25
 
 
@@ -44,7 +44,7 @@
 
 
 fcl::CollisionObject<double> *colliderObstacle;
-
+std::string *boxString;
 // TODO figure out how to make it so that all things are persistent without using "new"
 // size is 5cm
 fcl::CollisionObject<double>* generateObstacle(sejong::Vect3 location, double size) {
@@ -57,17 +57,36 @@ fcl::CollisionObject<double>* generateObstacle(sejong::Vect3 location, double si
   
   // generateBVHModel(*colliderModel, obstacleCube, obstacleTransform);
   std::shared_ptr<fcl::CollisionGeometry<double>> colGeom(obstacleCube);
-  std::string *str = new std::string("box");
-  colGeom->setUserData(str);
+  // std::string *str = new std::string("box");
+  colGeom->setUserData(boxString);
   fcl::CollisionObject<double>* colliderObject = new fcl::CollisionObject<double>(colGeom, obstacleTransform);
-  colliderObject->setUserData(str);
+  colliderObject->setUserData(boxString);
   return colliderObject;
 }
 
 void colliderCallback(const geometry_msgs::Pose& msg) {
+  // delete colliderObstacle->getUserData();
   delete colliderObstacle;
   // need to fix for how fcl vs ros denotes markers
   colliderObstacle = generateObstacle(sejong::Vect3(msg.position.x, msg.position.y, msg.position.z-sizeBox/2), sizeBox);
+}
+
+
+
+void printCollisions(std::vector<fcl::Contact<double>> collisionContacts) {
+ std::cout << "Number of collisions: " << collisionContacts.size() << std::endl;
+ if(collisionContacts.size() > 0) {
+    for(int i=0; i<collisionContacts.size(); i++) {
+      fcl::Contact<double> con = collisionContacts[i];
+      std::cout << "Collision Between: ";
+      std::cout << *((std::string*)con.o1->getUserData());
+      std::cout << " and joint ";
+      std::cout << ((CollisionLink<double>*)con.o2->getUserData())->link1 << "-" << ((CollisionLink<double>*)con.o2->getUserData())->link2 << std::endl;
+    }
+  }
+  else{
+    std::cout << "No collisions" << std::endl;
+  }
 }
 
 
@@ -80,6 +99,7 @@ int main(int argc, char** argv) {
 
   // temporary declaration
   colliderObstacle = generateObstacle(sejong::Vect3(100, 100, 100), .25);
+  boxString = new std::string("box");
 
   ros::Publisher marker_pub = n.advertise<visualization_msgs::MarkerArray>("visualization_marker_array", 1);
   ros::Subscriber sub = n.subscribe("interactiveMarker", 10, colliderCallback);
@@ -127,17 +147,16 @@ int main(int argc, char** argv) {
     // std::cout << "Debug1" << std::endl;
     std::vector<fcl::Contact<double>> collisionContacts = valkyrie_collision_checker->collideWith(colliderObstacle);
     // std::cout << "Debug2" << std::endl;
-    
-    if(collisionContacts.size() > 0) {
-      fcl::Contact<double> con = collisionContacts[0];
-      std::cout << *((std::string*)con.o1->getUserData()) << std::endl;
-      std::cout << ((CollisionLink<double>*)con.o2->getUserData())->link1 << std::endl;
-      std::cout << "Blarg" << std::endl;
-    }
+    printCollisions(collisionContacts);
+   
     // std::cout << "Debug3" << std::endl;
     r.sleep();
   }
 
+
+  delete colliderObstacle;
+  delete valkyrie_collision_checker;
+  delete boxString;
   return -1;
 }
 

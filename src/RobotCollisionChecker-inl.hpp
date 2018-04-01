@@ -36,9 +36,44 @@ RobotCollisionChecker<S>::RobotCollisionChecker(sejong::Vector& m_q, sejong::Vec
   robotCollisionModel = new fcl::SaPCollisionManager<S>();
   robotCollisionModel->setup();
 
-  // Declare all joints as collisionLink objects
-  CollisionLink<S> link(SJLinkID::LK_leftCOP_Frame, SJLinkID::LK_leftKneePitchLink);
-  collisionLinks.push_back(link);
+  // Initialize joint lists
+  // Arms are missing hand joints
+  rightArmJoints.push_back(SJLinkID::LK_rightElbowPitchLink);
+  rightArmJoints.push_back(SJLinkID::LK_rightShoulderYawLink);
+
+  leftArmJoints.push_back(SJLinkID::LK_leftShoulderYawLink);
+  leftArmJoints.push_back(SJLinkID::LK_leftElbowPitchLink);
+
+  rightLegJoints.push_back(SJLinkID::LK_rightCOP_Frame);
+  rightLegJoints.push_back(SJLinkID::LK_rightKneePitchLink);
+  rightLegJoints.push_back(SJLinkID::LK_rightHipYawLink);
+
+  leftLegJoints.push_back(SJLinkID::LK_leftCOP_Frame);
+  leftLegJoints.push_back(SJLinkID::LK_leftKneePitchLink);
+  leftLegJoints.push_back(SJLinkID::LK_leftHipYawLink);
+
+  torsoJoints.push_back(SJLinkID::LK_torso);
+  torsoJoints.push_back(SJLinkID::LK_neckYawLink);
+  torsoJoints.push_back(SJLinkID::LK_upperNeckPitchLink);
+
+  // Populate all joints as collision link objects
+  for(int i=0; i<rightArmJoints.size()-1; i++){
+    collisionLinks.push_back(CollisionLink<S>(rightArmJoints[i], rightArmJoints[i+1], CLT_appendage_arm));
+  }
+  for(int i=0; i<leftArmJoints.size()-1; i++){
+    collisionLinks.push_back(CollisionLink<S>(leftArmJoints[i], leftArmJoints[i+1], CLT_appendage_arm));
+  }
+  for(int i=0; i<rightLegJoints.size()-1; i++){
+    collisionLinks.push_back(CollisionLink<S>(rightLegJoints[i], rightLegJoints[i+1], CLT_appendage_leg));
+  }
+  for(int i=0; i<leftLegJoints.size()-1; i++){
+    collisionLinks.push_back(CollisionLink<S>(leftLegJoints[i], leftLegJoints[i+1], CLT_appendage_leg));
+  }
+  for(int i=0; i<torsoJoints.size()-1; i++){
+    collisionLinks.push_back(CollisionLink<S>(torsoJoints[i], torsoJoints[i+1], CLT_torso));
+  }
+
+
 }
 
 /**
@@ -55,9 +90,12 @@ RobotCollisionChecker<S>::~RobotCollisionChecker(){
  * Generates BroadPhaseCollision Manager to run collisions against objects
  */
 template <typename S>
-void RobotCollisionChecker<S>::generateRobotCollisionModel() {  
+void RobotCollisionChecker<S>::generateRobotCollisionModel() {
+  robot_env.clear();
   // Collision environment is a class variable
-  robot_env.push_back(collisionLinks[0].computeCollisionObject(*robot_q, collisionLinkType::CLT_appendage_leg));
+  for(int i=0; i<collisionLinks.size(); i++){
+    robot_env.push_back(collisionLinks[i].computeCollisionObject(*robot_q, collisionLinkType::CLT_appendage_leg));
+  }
   robotCollisionModel->clear();
 
   // add the collision object to the model collider

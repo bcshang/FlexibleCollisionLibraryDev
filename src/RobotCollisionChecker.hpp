@@ -19,6 +19,12 @@ template <typename S>
 class RobotCollisionChecker{
 public:
 
+  std::vector<int> rightArmJoints;
+  std::vector<int> leftArmJoints;
+  std::vector<int> rightLegJoints;
+  std::vector<int> leftLegJoints;
+  std::vector<int> torsoJoints;
+
   RobotModel* robot_model;
   sejong::Vector* robot_q;
   sejong::Vector* robot_qdot;

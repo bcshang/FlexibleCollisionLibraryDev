@@ -18,24 +18,25 @@ enum collisionLinkType{
     CLT_torso
 };
 
-#define armWidth .8
+#define armWidth .08
 #define legWidth .10
-#define torsoWidth .5 // TODO No idea what this is
+#define torsoWidth .5 // TODO No idea what this value actually is
 
 template<typename S>
 class CollisionLink{
 public:
     int link1; // SJLinkID's
     int link2;
+    int linkType;
 
     std::shared_ptr<fcl::ShapeBase<S> > collisionShape; // Shape
     fcl::Transform3<S> collisionTran;   // transformation
     std::shared_ptr<fcl::CollisionGeometry<S>> collisionGeo; // collision geometry
-    std::shared_ptr<fcl::CollisionObject<S>> collisionObj;   // collision object
+    fcl::CollisionObject<S>* collisionObj;   // collision object
     RobotModel* robot_model;
 
     CollisionLink();
-    CollisionLink(int firstlink, int secondlink);
+    CollisionLink(int firstlink, int secondlink, int linkType);
     ~CollisionLink();
 
     fcl::CollisionObject<S>* computeCollisionObject(sejong::Vector& robot_q, int linkType);
