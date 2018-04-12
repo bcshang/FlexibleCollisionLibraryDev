@@ -10,7 +10,7 @@
 
 #include "helpfulMath.hpp"
 
-#define jointDiameter .2
+#define jointDiameter .15
 
 
 
@@ -49,10 +49,11 @@ visualization_msgs::Marker createMarker(double x_pos, double y_pos, double z_pos
   marker.pose.orientation.z = 0.0;
   marker.pose.orientation.w = 1.0;
 
+  double markerSize = .08;
   // Set the scale of the marker -- 1x1x1 here means 1m on a side
-  marker.scale.x = 0.05;
-  marker.scale.y = 0.05;
-  marker.scale.z = 0.05;
+  marker.scale.x = markerSize;
+  marker.scale.y = markerSize;
+  marker.scale.z = markerSize;
 
   // Set the color -- be sure to set alpha to something non-zero!
   marker.color.r = 0.0f;

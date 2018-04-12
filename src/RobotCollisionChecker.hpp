@@ -15,6 +15,10 @@
 #include "CollisionLink.hpp"
 #include "helpfulMath.hpp"
 
+
+#include "markerGeneration.hpp"
+#include <visualization_msgs/Marker.h>
+#include <visualization_msgs/MarkerArray.h>
 template <typename S>
 class RobotCollisionChecker{
 public:
@@ -54,7 +58,7 @@ public:
    */
   std::vector<fcl::Contact<S>> collideWith(fcl::CollisionObject<S>* obj);
 
-  
+  std::vector<visualization_msgs::Marker> generateMarkers(void);
 };
 
 

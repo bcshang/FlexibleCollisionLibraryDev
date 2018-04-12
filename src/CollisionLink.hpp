@@ -11,7 +11,7 @@
 #include "fcl/geometry/shape/box.h"
 
 #include "helpfulMath.hpp"
-
+#include <iostream>
 enum collisionLinkType{
     CLT_appendage_arm = 0,
     CLT_appendage_leg,
@@ -39,7 +39,7 @@ public:
     CollisionLink(int firstlink, int secondlink, int linkType);
     ~CollisionLink();
 
-    fcl::CollisionObject<S>* computeCollisionObject(sejong::Vector& robot_q, int linkType);
+    fcl::CollisionObject<S>* computeCollisionObject(sejong::Vector& robot_q);
 };
 
 #include "CollisionLink-inl.hpp"

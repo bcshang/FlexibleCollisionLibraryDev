@@ -39,9 +39,9 @@ RobotCollisionChecker<S>::RobotCollisionChecker(sejong::Vector& m_q, sejong::Vec
   // Initialize joint lists
   // Arms are missing hand joints
   rightArmJoints.push_back(SJLinkID::LK_rightElbowPitchLink);
-  rightArmJoints.push_back(SJLinkID::LK_rightShoulderYawLink);
+  rightArmJoints.push_back(SJLinkID::LK_rightShoulderPitchLink);
 
-  leftArmJoints.push_back(SJLinkID::LK_leftShoulderYawLink);
+  leftArmJoints.push_back(SJLinkID::LK_leftShoulderPitchLink);
   leftArmJoints.push_back(SJLinkID::LK_leftElbowPitchLink);
 
   rightLegJoints.push_back(SJLinkID::LK_rightCOP_Frame);
@@ -94,7 +94,7 @@ void RobotCollisionChecker<S>::generateRobotCollisionModel() {
   robot_env.clear();
   // Collision environment is a class variable
   for(int i=0; i<collisionLinks.size(); i++){
-    robot_env.push_back(collisionLinks[i].computeCollisionObject(*robot_q, collisionLinkType::CLT_appendage_leg));
+    robot_env.push_back(collisionLinks[i].computeCollisionObject(*robot_q));
   }
   robotCollisionModel->clear();
 
@@ -105,6 +105,23 @@ void RobotCollisionChecker<S>::generateRobotCollisionModel() {
   robotCollisionModel->update();
 }
 
+
+/**
+ * 
+ */
+template <typename S>
+std::vector<visualization_msgs::Marker> RobotCollisionChecker<S>::generateMarkers(void){
+  // Variable size array
+  std::vector<visualization_msgs::Marker> markerVector;
+  for(int i=0; i<collisionLinks.size(); i++) {
+    sejong::Vect3 joint1Pos;
+    sejong::Vect3 joint2Pos;
+    robot_model->getPosition(*robot_q, collisionLinks[i].link1, joint1Pos);
+    robot_model->getPosition(*robot_q, collisionLinks[i].link2, joint2Pos);
+    markerVector.push_back(createMarker(joint1Pos));
+  }
+  return markerVector;
+}
 
 /**
  * Main colliding function
