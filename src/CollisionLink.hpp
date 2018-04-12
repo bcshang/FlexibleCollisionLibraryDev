@@ -18,8 +18,8 @@ enum collisionLinkType{
     CLT_torso
 };
 
-#define armWidth .08
-#define legWidth .10
+#define armWidth .09
+#define legWidth .11
 #define torsoWidth .5 // TODO No idea what this value actually is
 
 template<typename S>

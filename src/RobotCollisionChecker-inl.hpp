@@ -69,9 +69,9 @@ RobotCollisionChecker<S>::RobotCollisionChecker(sejong::Vector& m_q, sejong::Vec
   for(int i=0; i<leftLegJoints.size()-1; i++){
     collisionLinks.push_back(CollisionLink<S>(leftLegJoints[i], leftLegJoints[i+1], CLT_appendage_leg));
   }
-  for(int i=0; i<torsoJoints.size()-1; i++){
-    collisionLinks.push_back(CollisionLink<S>(torsoJoints[i], torsoJoints[i+1], CLT_torso));
-  }
+  // for(int i=0; i<torsoJoints.size()-1; i++){
+  //   collisionLinks.push_back(CollisionLink<S>(torsoJoints[i], torsoJoints[i+1], CLT_torso));
+  // }
 
 
 }

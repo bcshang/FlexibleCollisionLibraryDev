@@ -36,13 +36,20 @@ fcl::CollisionObject<S>* CollisionLink<S>::computeCollisionObject(sejong::Vector
     sejong::Vect3 joint2Pos;
     robot_model->getPosition(robot_q, link1, joint1Pos);
     robot_model->getPosition(robot_q, link2, joint2Pos);
+    
+    sejong::pretty_print(joint1Pos, std::cout, "Joint: " + std::to_string(link1) + " ");
+    sejong::pretty_print(joint2Pos, std::cout, "Joint: " + std::to_string(link2) + " ");
 
+    
     // Get orientations
     sejong::Quaternion joint1Orien;
     sejong::Quaternion joint2Orien;
     robot_model->getOrientation(robot_q, link1, joint1Orien);
     robot_model->getOrientation(robot_q, link2, joint2Orien);
 
+    
+    sejong::Vect3 fcl_position = calcMidpoint(joint1Pos, joint2Pos);
+    // sejong::Vect3 fcl_position = joint1Pos;
 
     Eigen::Matrix3d rotation = joint1Orien.normalized().toRotationMatrix();
     //std::cout << "Rotation pre" << rotation << std::endl;
@@ -54,14 +61,16 @@ fcl::CollisionObject<S>* CollisionLink<S>::computeCollisionObject(sejong::Vector
                     0, 1, 0;
 
         rotation = rotation*extraRot;
-        //std::cout << "Rotation post" << rotation << std::endl;;
+        //std::cout << "Rotation post" << rotation << std::endl;
+        fcl_position[2] -= armWidth * 1.5;
+
     }
     
     sejong::Quaternion finalJointOrientation(rotation);
-    sejong::pretty_print(finalJointOrientation, std::cout, "Joint: ");
+    
     // Distance between joints
     double dist = calcDistance(joint1Pos, joint2Pos);
-
+    std::cout << "Distance: " << dist << std::endl << std::endl;
     // Create a shape based on what type of appendage we have
     if(linkType == collisionLinkType::CLT_appendage_arm){
         collisionShape = std::make_shared<fcl::Cylinder<S> >(armWidth, dist);
@@ -75,7 +84,7 @@ fcl::CollisionObject<S>* CollisionLink<S>::computeCollisionObject(sejong::Vector
 
     // Populate transform (TODO doesn't include orientation)
     // collisionTran = fcl::Transform3<S>::Identity();
-    collisionTran.translation() = joint1Pos;
+    collisionTran.translation() = fcl_position;
 
     // TODO, this is really ugly but directly make shared doesn't work
     std::shared_ptr<fcl::CollisionGeometry<S>> temp(collisionShape.get()); 

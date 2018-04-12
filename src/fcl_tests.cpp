@@ -91,7 +91,7 @@ void printCollisions(std::vector<fcl::Contact<double>> collisionContacts) {
 
 
 
-int realmain(int argc, char** argv) {
+int main(int argc, char** argv) {
 
   // Initialize a ROS node
   ros::init(argc, argv, "fcl_tests");
@@ -125,6 +125,14 @@ int realmain(int argc, char** argv) {
   sejong::Vect3 vec;
   sejong::Vect3 vec1;
   
+  valkyrie_collision_checker->robot_model->getPosition(m_q, SJLinkID::LK_leftHipYawLink, vec);
+  sejong::pretty_print(vec, std::cout, "LK_leftHipYawLink link");
+  valkyrie_collision_checker->robot_model->getPosition(m_q, SJLinkID::LK_leftHipPitchLink, vec1);
+  sejong::pretty_print(vec1, std::cout, "LK_leftHipPitchLink link");
+  valkyrie_collision_checker->robot_model->getPosition(m_q, SJLinkID::LK_leftHipRollLink, vec1);
+  sejong::pretty_print(vec1, std::cout, "LK_leftHipRollLink link");
+
+
   valkyrie_collision_checker->robot_model->getPosition(m_q, SJLinkID::LK_rightShoulderPitchLink, vec);
   sejong::pretty_print(vec, std::cout, "R Shoulder pitch link");
   valkyrie_collision_checker->robot_model->getPosition(m_q, SJLinkID::LK_rightElbowPitchLink, vec1);
@@ -178,7 +186,7 @@ int realmain(int argc, char** argv) {
     // std::cout << "Debug1" << std::endl;
     std::vector<fcl::Contact<double>> collisionContacts = valkyrie_collision_checker->collideWith(colliderObstacle);
     // std::cout << "Debug2" << std::endl;
-    // printCollisions(collisionContacts);
+    printCollisions(collisionContacts);
    
     // std::cout << "Debug3" << std::endl;
     r.sleep();
@@ -192,7 +200,7 @@ int realmain(int argc, char** argv) {
 }
 
 
-int main(int argc, char** argv) {
+int mainTest(int argc, char** argv) {
 
   // Initialize a ROS node
   ros::init(argc, argv, "fcl_tests");
