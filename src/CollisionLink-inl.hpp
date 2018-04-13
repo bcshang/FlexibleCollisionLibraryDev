@@ -60,9 +60,13 @@ fcl::CollisionObject<S>* CollisionLink<S>::computeCollisionObject(sejong::Vector
                     0, 0, -1,
                     0, 1, 0;
 
-        rotation = rotation*extraRot;
+        // extraRot << 1, 0, 0,
+        //             0, 1, 0,
+        //             0, 0, 1;
+
+        rotation = extraRot * rotation;
         //std::cout << "Rotation post" << rotation << std::endl;
-        fcl_position[2] -= armWidth * 1.5;
+        //fcl_position[2] -= armWidth * 1.5;
 
     }
     
@@ -78,11 +82,8 @@ fcl::CollisionObject<S>* CollisionLink<S>::computeCollisionObject(sejong::Vector
     else if(linkType == collisionLinkType::CLT_appendage_leg){
         collisionShape = std::make_shared<fcl::Cylinder<S> >(legWidth, dist);
     }
-    else{
-        collisionShape = std::make_shared<fcl::Box<S> >(torsoWidth, torsoWidth, dist);
-    }
 
-    // Populate transform (TODO doesn't include orientation)
+    // Populate transform
     // collisionTran = fcl::Transform3<S>::Identity();
     collisionTran.translation() = fcl_position;
 
@@ -97,6 +98,27 @@ fcl::CollisionObject<S>* CollisionLink<S>::computeCollisionObject(sejong::Vector
     collisionObj = new fcl::CollisionObject<S>(collisionGeo, collisionTran);
     collisionObj->setUserData(this);
     collisionObj->setQuatRotation(finalJointOrientation);
+
+
+    // Create marker if desired
+    #if DEBUG
+    if(linkType == collisionLinkType::CLT_appendage_arm){
+        jointMarker = createCylinder(armWidth, dist);
+    }
+    else if(linkType == collisionLinkType::CLT_appendage_leg){
+        jointMarker = createCylinder(legWidth, dist);   
+    }
+
+    jointMarker.pose.position.x = fcl_position[0];
+    jointMarker.pose.position.y = fcl_position[1];
+    jointMarker.pose.position.z = fcl_position[2];
+
+    jointMarker.pose.orientation.x = finalJointOrientation.x();
+    jointMarker.pose.orientation.y = finalJointOrientation.y();
+    jointMarker.pose.orientation.z = finalJointOrientation.z();
+    jointMarker.pose.orientation.w = finalJointOrientation.w();
+    #endif
+
     return collisionObj;
 }
 

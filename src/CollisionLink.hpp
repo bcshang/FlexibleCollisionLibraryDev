@@ -1,6 +1,6 @@
 #ifndef __COLLISION_LINK_HPP
 #define __COLLISION_LINK_HPP
-
+#include "RCC_Common.hpp"
 #include <Utils/wrap_eigen.hpp>
 #include <Utils/utilities.hpp>
 #include <Valkyrie/Robot_Model/RobotModel.hpp>
@@ -10,17 +10,13 @@
 #include "fcl/geometry/shape/cylinder.h"
 #include "fcl/geometry/shape/box.h"
 
+
 #include "helpfulMath.hpp"
 #include <iostream>
-enum collisionLinkType{
-    CLT_appendage_arm = 0,
-    CLT_appendage_leg,
-    CLT_torso
-};
 
-#define armWidth .09
-#define legWidth .11
-#define torsoWidth .5 // TODO No idea what this value actually is
+#ifdef DEBUG
+#include "markerGeneration.hpp"
+#endif
 
 template<typename S>
 class CollisionLink{
@@ -34,6 +30,10 @@ public:
     std::shared_ptr<fcl::CollisionGeometry<S>> collisionGeo; // collision geometry
     fcl::CollisionObject<S>* collisionObj;   // collision object
     RobotModel* robot_model;
+
+    #if DEBUG
+    visualization_msgs::Marker jointMarker;
+    #endif
 
     CollisionLink();
     CollisionLink(int firstlink, int secondlink, int linkType);

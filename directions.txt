@@ -19,8 +19,8 @@ TODO:
 
 
 
-notes:
-left knee pitch link is like 20 cm off of what it actually is
-
 FCL surrounds a cylinder with a hexagonal prism to find collisions
 
+check distance between environment object and robot links
+cartesian product of collision objects and robot objects
+collide with self

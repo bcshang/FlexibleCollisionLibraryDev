@@ -131,7 +131,7 @@ void make6DofMarker( bool fixed, unsigned int interaction_mode, const tf::Vector
   InteractiveMarker int_marker;
   int_marker.header.frame_id = "/val_robot/pelvis";
   tf::pointTFToMsg(position, int_marker.pose.position);
-  int_marker.scale = .25;
+  int_marker.scale = .1;
 
   int_marker.name = "simple_6dof";
   int_marker.description = "Simple 6-DOF Control";
@@ -214,7 +214,7 @@ int main(int argc, char** argv)
   ros::Rate r(15);
 
   tf::Vector3 position;
-  position = tf::Vector3( 0, 3, 0);
+  position = tf::Vector3( 0, 1, 0);
   make6DofMarker( true, visualization_msgs::InteractiveMarkerControl::NONE, position, true );
 
   server->applyChanges();

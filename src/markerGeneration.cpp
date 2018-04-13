@@ -10,10 +10,6 @@
 
 #include "helpfulMath.hpp"
 
-#define jointDiameter .15
-
-
-
 /**
  * Creates a ROS visualization marker
  * @param x coordinate of marker
@@ -80,14 +76,12 @@ visualization_msgs::Marker createMarker(sejong::Vect3 pos) {
 
 /**
  * Create a marker cylinder for visualization purposes
- * @param  pos1 bottom point
- * @param  pos2 top point
+ * @param  radius radius
+ * @param  height height
  * @return      ROS Marker message
  */
-visualization_msgs::Marker createCylinder(sejong::Vect3 pos1, sejong::Vect3 pos2) {
+visualization_msgs::Marker createCylinder(double radius, double height) {
   visualization_msgs::Marker marker;
-  double dist = calcDistance(pos1, pos2);
-  sejong::Vect3 midpoint = calcMidpoint(pos1, pos2);
 
   static int markernum = 0;
 
@@ -108,9 +102,9 @@ visualization_msgs::Marker createCylinder(sejong::Vect3 pos1, sejong::Vect3 pos2
   marker.action = visualization_msgs::Marker::ADD;
 
   // Set the position of the marker
-  marker.pose.position.x = midpoint[0];
-  marker.pose.position.y = midpoint[1];
-  marker.pose.position.z = midpoint[2];
+  marker.pose.position.x = 0;
+  marker.pose.position.y = 0;
+  marker.pose.position.z = 0;
 
   // set up a quaternion if we want to
   marker.pose.orientation.x = 0.0;
@@ -119,9 +113,9 @@ visualization_msgs::Marker createCylinder(sejong::Vect3 pos1, sejong::Vect3 pos2
   marker.pose.orientation.w = 1.0;
   
   // Set the scale of the marker -- 1x1x1 here means 1m on a side
-  marker.scale.x = jointDiameter;
-  marker.scale.y = jointDiameter;
-  marker.scale.z = dist;
+  marker.scale.x = radius*2;
+  marker.scale.y = radius*2;
+  marker.scale.z = height;
 
   // Set the color -- be sure to set alpha to something non-zero!
   marker.color.r = 0.0f;

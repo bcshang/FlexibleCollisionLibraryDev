@@ -1,3 +1,5 @@
+#include "RCC_Common.hpp"
+
 // Standard C things
 #include <iostream>
 #include <vector>
@@ -36,10 +38,6 @@
 #include "markerGeneration.hpp"
 
 
-#define NODE_RATE 10
-#define sizeBox .25
-
-
 
 
 
@@ -68,7 +66,7 @@ void colliderCallback(const geometry_msgs::Pose& msg) {
   // delete colliderObstacle->getUserData();
   delete colliderObstacle;
   // need to fix for how fcl vs ros denotes markers
-  colliderObstacle = generateObstacle(sejong::Vect3(msg.position.x, msg.position.y, msg.position.z-sizeBox/2), sizeBox);
+  colliderObstacle = generateObstacle(sejong::Vect3(msg.position.x, msg.position.y, msg.position.z), sizeBox);
 }
 
 
@@ -89,17 +87,14 @@ void printCollisions(std::vector<fcl::Contact<double>> collisionContacts) {
   }
 }
 
+void standardProgram(void) {
+  boxString = new std::string("box");
 
-
-int main(int argc, char** argv) {
-
-  // Initialize a ROS node
-  ros::init(argc, argv, "fcl_tests");
+  // Start ROS things
   ros::NodeHandle n;
 
   // temporary declaration
   colliderObstacle = generateObstacle(sejong::Vect3(100, 100, 100), .25);
-  boxString = new std::string("box");
 
   ros::Publisher marker_pub = n.advertise<visualization_msgs::MarkerArray>("visualization_marker_array", 1);
   ros::Subscriber sub = n.subscribe("interactiveMarker", 10, colliderCallback);
@@ -120,50 +115,7 @@ int main(int argc, char** argv) {
 
 
   std::vector<visualization_msgs::Marker> markerVector = valkyrie_collision_checker->generateMarkers();
-
-// Debugging things
-  sejong::Vect3 vec;
-  sejong::Vect3 vec1;
   
-  valkyrie_collision_checker->robot_model->getPosition(m_q, SJLinkID::LK_leftHipYawLink, vec);
-  sejong::pretty_print(vec, std::cout, "LK_leftHipYawLink link");
-  valkyrie_collision_checker->robot_model->getPosition(m_q, SJLinkID::LK_leftHipPitchLink, vec1);
-  sejong::pretty_print(vec1, std::cout, "LK_leftHipPitchLink link");
-  valkyrie_collision_checker->robot_model->getPosition(m_q, SJLinkID::LK_leftHipRollLink, vec1);
-  sejong::pretty_print(vec1, std::cout, "LK_leftHipRollLink link");
-
-
-  valkyrie_collision_checker->robot_model->getPosition(m_q, SJLinkID::LK_rightShoulderPitchLink, vec);
-  sejong::pretty_print(vec, std::cout, "R Shoulder pitch link");
-  valkyrie_collision_checker->robot_model->getPosition(m_q, SJLinkID::LK_rightElbowPitchLink, vec1);
-  sejong::pretty_print(vec1, std::cout, "R elbow Pitch link");
-
-  visualization_msgs::Marker cyl = createCylinder(vec1, vec);
-  sejong::Quaternion joint1Orien;
-  valkyrie_collision_checker->robot_model->getOrientation(m_q, SJLinkID::LK_rightShoulderRollLink, joint1Orien);
-  Eigen::Matrix3d rotation = joint1Orien.normalized().toRotationMatrix();
-  Eigen::Matrix3d extraRot; // needed because arms are based around y axis
-  // rotate 90 degrees about x axis
-  extraRot << 1, 0, 0,
-              0, 0, -1,
-              0, 1, 0;
-
-  rotation = rotation*extraRot;
-  sejong::Quaternion newOrientation(rotation);
-  sejong::pretty_print(newOrientation, std::cout, "Cyl:");
-  cyl.pose.orientation.x = newOrientation.x();
-  cyl.pose.orientation.y = newOrientation.y();
-  cyl.pose.orientation.z = newOrientation.z();
-  cyl.pose.orientation.w = newOrientation.w();
-
-  markerVector.push_back(cyl);
-
-
-
-
-
-
-
   // Set up array markers message
   visualization_msgs::MarkerArray markerArray;
   markerArray.markers.resize(markerVector.size());
@@ -196,11 +148,19 @@ int main(int argc, char** argv) {
   delete colliderObstacle;
   delete valkyrie_collision_checker;
   delete boxString;
+
+}
+
+int main(int argc, char** argv) {
+  // Initialize a ROS node
+  ros::init(argc, argv, "fcl_tests");
+
+  standardProgram();
   return -1;
 }
 
 
-int mainTest(int argc, char** argv) {
+int main1(int argc, char** argv) {
 
   // Initialize a ROS node
   ros::init(argc, argv, "fcl_tests");
@@ -218,6 +178,7 @@ int mainTest(int argc, char** argv) {
   sejong::Vector m_qdot; m_qdot.resize(NUM_QDOT); m_qdot.setZero();
 
   m_q[NUM_QDOT] = 1.0;
+  m_q[NUM_VIRTUAL+SJJointID::rightShoulderRoll] = 0.5;
 
   RobotModel* robot_model= RobotModel::GetRobotModel();
   robot_model->UpdateModel(m_q, m_qdot);  
@@ -234,8 +195,8 @@ int mainTest(int argc, char** argv) {
 
   std::vector<visualization_msgs::Marker> markerVector;
 
-  // cylindrical marker
-  visualization_msgs::Marker cyl = createCylinder(vec1, vec);
+  // cylindrical marker TODO Fix this
+  visualization_msgs::Marker cyl;// = createCylinder(sejong::Vect3(0,0,-.5), sejong::Vect3(0,0,.5));
   sejong::Quaternion joint1Orien;
   robot_model->getOrientation(m_q, SJLinkID::LK_rightShoulderRollLink, joint1Orien);
   Eigen::Matrix3d rotation = joint1Orien.normalized().toRotationMatrix();
@@ -245,9 +206,12 @@ int mainTest(int argc, char** argv) {
               0, 0, -1,
               0, 1, 0;
 
-  rotation = rotation*extraRot;
+  rotation = extraRot*rotation;
   sejong::Quaternion newOrientation(rotation);
   sejong::pretty_print(newOrientation, std::cout, "Cyl:");
+  cyl.pose.position.x += .5;
+  cyl.pose.position.y += .5;
+  cyl.pose.position.z += .5;
   cyl.pose.orientation.x = newOrientation.x();
   cyl.pose.orientation.y = newOrientation.y();
   cyl.pose.orientation.z = newOrientation.z();
@@ -273,11 +237,11 @@ int mainTest(int argc, char** argv) {
   // generate FCL object
   double dist = calcDistance(vec, vec1);
 
-  fcl::Cylinder<double> fcl_cyl(.08, dist);
+  fcl::Cylinder<double> fcl_cyl(.08, 1);
   fcl::Transform3<double> collisionTran;
-  sejong::Vect3 position_final = calcMidpoint(vec, vec1);
+  sejong::Vect3 position_final = sejong::Vect3(.5,.5,.5); //calcMidpoint(vec, vec1);
 
-  position_final[2] -= .12; // fixing for the rotation
+  // position_final[2] -= .12; // fixing for the rotation
   collisionTran.translation() = position_final;
   std::shared_ptr<fcl::CollisionGeometry<double>> fcl_colGeo(&fcl_cyl);
   fcl::CollisionObject<double> fcl_colObj(fcl_colGeo, collisionTran);

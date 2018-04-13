@@ -96,6 +96,20 @@ void RobotCollisionChecker<S>::generateRobotCollisionModel() {
   for(int i=0; i<collisionLinks.size(); i++){
     robot_env.push_back(collisionLinks[i].computeCollisionObject(*robot_q));
   }
+
+  // Torso must be done specially:
+  sejong::Vect3 joint1Pos;
+  sejong::Vect3 joint2Pos;
+  robot_model->getPosition(*robot_q, SJLinkID::LK_rightShoulderPitchLink, joint1Pos);
+  robot_model->getPosition(*robot_q, SJLinkID::LK_leftShoulderPitchLink, joint2Pos);
+  double torsoWidth = calcDistance(joint1Pos, joint2Pos);
+
+  robot_model->getPosition(*robot_q, SJLinkID::LK_rightShoulderPitchLink, joint1Pos);
+  robot_model->getPosition(*robot_q, SJLinkID::LK_leftShoulderPitchLink, joint2Pos);
+
+
+
+  
   robotCollisionModel->clear();
 
   // add the collision object to the model collider
@@ -113,12 +127,8 @@ template <typename S>
 std::vector<visualization_msgs::Marker> RobotCollisionChecker<S>::generateMarkers(void){
   // Variable size array
   std::vector<visualization_msgs::Marker> markerVector;
-  for(int i=0; i<collisionLinks.size(); i++) {
-    sejong::Vect3 joint1Pos;
-    sejong::Vect3 joint2Pos;
-    robot_model->getPosition(*robot_q, collisionLinks[i].link1, joint1Pos);
-    robot_model->getPosition(*robot_q, collisionLinks[i].link2, joint2Pos);
-    markerVector.push_back(createMarker(joint1Pos));
+  for(int i=0; i< collisionLinks.size(); i++){
+    markerVector.push_back(collisionLinks[i].jointMarker);
   }
   return markerVector;
 }

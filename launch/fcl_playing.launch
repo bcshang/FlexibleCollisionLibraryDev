@@ -1,5 +1,5 @@
 <launch>
-    <arg name="gui" default="False" />  
+    <arg name="gui" default="True" />  
 
     <group ns="val_robot">
       <param name="robot_description" textfile="$(find val_viz)/robot_urdf/valkyrie_sim_gazebo_sync.urdf" />        
