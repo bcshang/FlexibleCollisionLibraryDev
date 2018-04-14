@@ -20,17 +20,17 @@ RobotCollisionChecker<S>::RobotCollisionChecker(){};
  * Actually use this constructor please
  */
 template <typename S>
-RobotCollisionChecker<S>::RobotCollisionChecker(sejong::Vector& m_q, sejong::Vector& m_qdot){
+RobotCollisionChecker<S>::RobotCollisionChecker(sejong::Vector m_q, sejong::Vector m_qdot){
   
   // Get the robot model
   robot_model = RobotModel::GetRobotModel();
 
   // Setup class variables  
-  robot_q = new sejong::Vector(m_q);
-  robot_qdot = new sejong::Vector(m_qdot);
+  robot_q = m_q;
+  robot_qdot = m_qdot;
 
   // update model
-  robot_model->UpdateModel(*robot_q, *robot_qdot);  
+  robot_model->UpdateModel(robot_q, robot_qdot);  
 
    // Declare a sweep and prune collision manager (mentioned in the research paper specifically for ROS?)
   robotCollisionModel = new fcl::SaPCollisionManager<S>();
@@ -81,8 +81,6 @@ RobotCollisionChecker<S>::RobotCollisionChecker(sejong::Vector& m_q, sejong::Vec
  */
 template <typename S>
 RobotCollisionChecker<S>::~RobotCollisionChecker(){
-  delete robot_q; 
-  delete robot_qdot;
   delete robotCollisionModel;
 }
 
@@ -94,22 +92,36 @@ void RobotCollisionChecker<S>::generateRobotCollisionModel() {
   robot_env.clear();
   // Collision environment is a class variable
   for(int i=0; i<collisionLinks.size(); i++){
-    robot_env.push_back(collisionLinks[i].computeCollisionObject(*robot_q));
+    robot_env.push_back(collisionLinks[i].computeCollisionObject(robot_q));
   }
 
-  // Torso must be done specially:
+  // Torso must be done specially and really jankly
+  // Start with the actual torso
   sejong::Vect3 joint1Pos;
   sejong::Vect3 joint2Pos;
-  robot_model->getPosition(*robot_q, SJLinkID::LK_rightShoulderPitchLink, joint1Pos);
-  robot_model->getPosition(*robot_q, SJLinkID::LK_leftShoulderPitchLink, joint2Pos);
+  // get width
+  robot_model->getPosition(robot_q, SJLinkID::LK_rightShoulderPitchLink, joint1Pos);
+  robot_model->getPosition(robot_q, SJLinkID::LK_leftShoulderPitchLink, joint2Pos);
   double torsoWidth = calcDistance(joint1Pos, joint2Pos);
-
-  robot_model->getPosition(*robot_q, SJLinkID::LK_rightShoulderPitchLink, joint1Pos);
-  robot_model->getPosition(*robot_q, SJLinkID::LK_leftShoulderPitchLink, joint2Pos);
-
-
-
   
+  // get hips to calculat height
+  sejong::Vect3 temphip1;
+  sejong::Vect3 temphip2;
+  robot_model->getPosition(robot_q, SJLinkID::LK_leftHipYawLink, temphip1);
+  robot_model->getPosition(robot_q, SJLinkID::LK_rightHipYawLink, temphip2);
+  joint1Pos = calcMidpoint(temphip1, temphip2);
+
+  // get the height of the object
+  robot_model->getPosition(robot_q, SJLinkID::LK_neckYawLink, joint2Pos);
+  double torsoHeight = calcDistance(joint1Pos, joint2Pos);
+
+  // Actually add it to the model
+  collisionLinks.push_back(CollisionLink<S>(SJLinkID::LK_torso, LK_neckYawLink, CLT_torso));
+  robot_env.push_back(collisionLinks[collisionLinks.size()-1].computeCollisionObject(robot_q, torsoDepth, torsoWidth, torsoHeight));
+
+
+
+
   robotCollisionModel->clear();
 
   // add the collision object to the model collider
@@ -129,6 +141,7 @@ std::vector<visualization_msgs::Marker> RobotCollisionChecker<S>::generateMarker
   std::vector<visualization_msgs::Marker> markerVector;
   for(int i=0; i< collisionLinks.size(); i++){
     markerVector.push_back(collisionLinks[i].jointMarker);
+    // std::cout << markerVector[i] << std::endl << std::endl;
   }
   return markerVector;
 }

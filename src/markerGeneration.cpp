@@ -10,6 +10,9 @@
 
 #include "helpfulMath.hpp"
 
+int markernum = 0;
+
+
 /**
  * Creates a ROS visualization marker
  * @param x coordinate of marker
@@ -83,8 +86,6 @@ visualization_msgs::Marker createMarker(sejong::Vect3 pos) {
 visualization_msgs::Marker createCylinder(double radius, double height) {
   visualization_msgs::Marker marker;
 
-  static int markernum = 0;
-
   int shape = visualization_msgs::Marker::CYLINDER;
 
 
@@ -124,5 +125,51 @@ visualization_msgs::Marker createCylinder(double radius, double height) {
   marker.color.a = 1.0;
 
   return marker;
+}
+
+
+visualization_msgs::Marker createBox(double x_size, double y_size, double z_size){
+  visualization_msgs::Marker marker;
+
+  int shape = visualization_msgs::Marker::CUBE;
+
+
+  marker.header.frame_id = "/val_robot/pelvis";
+  marker.header.stamp = ros::Time::now();
+
+  marker.ns = "basic_shapes";
+  marker.id = markernum;
+  markernum++;
+
+  // Set the marker shape
+  marker.type = shape;
+
+  // Set the marker action
+  marker.action = visualization_msgs::Marker::ADD;
+
+  // Set the position of the marker
+  marker.pose.position.x = 0;
+  marker.pose.position.y = 0;
+  marker.pose.position.z = 0;
+
+  // set up a quaternion if we want to
+  marker.pose.orientation.x = 0.0;
+  marker.pose.orientation.y = 0.0;
+  marker.pose.orientation.z = 0.0;
+  marker.pose.orientation.w = 1.0;
+  
+  // Set the scale of the marker -- 1x1x1 here means 1m on a side
+  marker.scale.x = x_size;
+  marker.scale.y = y_size;
+  marker.scale.z = z_size;
+
+  // Set the color -- be sure to set alpha to something non-zero!
+  marker.color.r = 0.0f;
+  marker.color.g = 1.0f;
+  marker.color.b = 1.0f;
+  marker.color.a = 1.0;
+
+  return marker;
+
 }
 

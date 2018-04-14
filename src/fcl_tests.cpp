@@ -114,8 +114,10 @@ void standardProgram(void) {
   std::cout << "Valkyrie FCL Model Constructed" << std::endl;
 
 
-  std::vector<visualization_msgs::Marker> markerVector = valkyrie_collision_checker->generateMarkers();
-  
+  // Visualization markers for the FCL objects
+  #if DEBUG  
+  std::vector<visualization_msgs::Marker> markerVector; 
+  markerVector = valkyrie_collision_checker->generateMarkers();
   // Set up array markers message
   visualization_msgs::MarkerArray markerArray;
   markerArray.markers.resize(markerVector.size());
@@ -124,23 +126,22 @@ void standardProgram(void) {
   for(int i=0; i<markerVector.size(); i++) {
     markerArray.markers[i] = markerVector[i];
   }
-
+  #endif
   
 
   std::cout << "ROS Loop start" << std::endl;
-  while(ros::ok()) {
-
-    // Publish the marker array
-    marker_pub.publish(markerArray); 
-
+  while(ros::ok()) {    
     ros::spinOnce();
 
-    // std::cout << "Debug1" << std::endl;
+
     std::vector<fcl::Contact<double>> collisionContacts = valkyrie_collision_checker->collideWith(colliderObstacle);
-    // std::cout << "Debug2" << std::endl;
-    printCollisions(collisionContacts);
+
+    //printCollisions(collisionContacts);
    
-    // std::cout << "Debug3" << std::endl;
+    #if DEBUG
+    marker_pub.publish(markerArray); 
+    #endif
+
     r.sleep();
   }
 
@@ -151,19 +152,13 @@ void standardProgram(void) {
 
 }
 
-int main(int argc, char** argv) {
-  // Initialize a ROS node
-  ros::init(argc, argv, "fcl_tests");
-
-  standardProgram();
-  return -1;
-}
 
 
-int main1(int argc, char** argv) {
+
+
+void test(void) {
 
   // Initialize a ROS node
-  ros::init(argc, argv, "fcl_tests");
   ros::NodeHandle n;
 
   // temporary declaration
@@ -219,8 +214,6 @@ int main1(int argc, char** argv) {
 
   markerVector.push_back(cyl);
 
-
-
   // Set up array markers message
   visualization_msgs::MarkerArray markerArray;
   markerArray.markers.resize(markerVector.size());
@@ -229,10 +222,6 @@ int main1(int argc, char** argv) {
   for(int i=0; i<markerVector.size(); i++) {
     markerArray.markers[i] = markerVector[i];
   }
-
-
-
-
 
   // generate FCL object
   double dist = calcDistance(vec, vec1);
@@ -247,22 +236,16 @@ int main1(int argc, char** argv) {
   fcl::CollisionObject<double> fcl_colObj(fcl_colGeo, collisionTran);
   fcl_colObj.setQuatRotation(newOrientation);
 
-
-
   fcl::BroadPhaseCollisionManager<double> *modelCollider = new fcl::SaPCollisionManager<double>();
   // Create collision objects to place into a model
   std::vector<fcl::CollisionObject<double>*> env;
   env.push_back(&fcl_colObj);
-
 
   // add the collision object to the model collider
   modelCollider->registerObjects(env);
 
   // Initialize the manager
   modelCollider->setup();
-
-
-
 
   std::cout << "ROS Loop start" << std::endl;
   while(ros::ok()) {
@@ -276,4 +259,17 @@ int main1(int argc, char** argv) {
     r.sleep();
   }
 }
+
+
+
+
+int main(int argc, char** argv) {
+  // Initialize a ROS node
+  ros::init(argc, argv, "fcl_tests");
+
+  standardProgram();
+  return -1;
+}
+
+
 

@@ -35,11 +35,11 @@ public:
     visualization_msgs::Marker jointMarker;
     #endif
 
-    CollisionLink();
     CollisionLink(int firstlink, int secondlink, int linkType);
     ~CollisionLink();
 
     fcl::CollisionObject<S>* computeCollisionObject(sejong::Vector& robot_q);
+    fcl::CollisionObject<S>* computeCollisionObject(sejong::Vector& robot_q, double x_size, double y_size, double z_size);
 };
 
 #include "CollisionLink-inl.hpp"

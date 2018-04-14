@@ -30,14 +30,14 @@ public:
   std::vector<int> torsoJoints;
 
   RobotModel* robot_model;
-  sejong::Vector* robot_q;
-  sejong::Vector* robot_qdot;
+  sejong::Vector robot_q;
+  sejong::Vector robot_qdot;
   fcl::BroadPhaseCollisionManager<S> *robotCollisionModel; 
   std::vector<fcl::CollisionObject<S>*> robot_env;
   std::vector<CollisionLink<S>> collisionLinks;
   RobotCollisionChecker();
 
-  RobotCollisionChecker(sejong::Vector& m_q, sejong::Vector& m_qdot);
+  RobotCollisionChecker(sejong::Vector m_q, sejong::Vector m_qdot);
   
   ~RobotCollisionChecker();
 
