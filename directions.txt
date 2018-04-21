@@ -14,11 +14,6 @@ RSS - rectangle sphere swept bounding volume
 SAP - sweep and prune
 
 
-TODO:
-    1. I have no idea how FCL decides to draw the shapes (like in what direction and such)
-
-
-
 FCL surrounds a cylinder with a hexagonal prism to find collisions
 
 check distance between environment object and robot links

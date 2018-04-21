@@ -146,6 +146,9 @@ std::vector<visualization_msgs::Marker> RobotCollisionChecker<S>::generateMarker
   return markerVector;
 }
 
+
+// TODO fix this for actual objects
+extern fcl::CollisionObject<double> *colliderObstacle;
 /**
  * Main colliding function
  * 
@@ -164,7 +167,76 @@ std::vector<fcl::Contact<S>> RobotCollisionChecker<S>::collideWith(fcl::Collisio
   std::vector<fcl::Contact<S>> contacts;
   colData.result.getContacts(contacts);
 
+  /*if(contacts.size() > 0){
+    fcl::Contact<double> con = contacts[0];
+    double distance;
+    fcl::DistanceRequest<double> distReq;
+    distReq.enable_signed_distance = true;
+    distReq.enable_nearest_points = true;
+    distReq.gjk_solver_type = fcl::GST_LIBCCD;
+    
+    fcl::DistanceResult<double> distRes;
+
+    std::cout << "debug1" << std::endl;
+    // Extract the joint number
+    // TODO joint1 is the box....
+    int numJoint2 = ((CollisionLink<double>*) con.o2->getUserData())->link1;
+
+    sejong::Vect3 pos2;
+    robot_model->getPosition(robot_q, numJoint2, pos2);
+    
+    
+    fcl::Transform3<double> tf2;
+
+    
+    tf2.translation() = pos2;
+    
+    
+    
+    sejong::Quaternion quat2;
+    
+    robot_model->getOrientation(robot_q, numJoint2, quat2);
+    
+    
+    tf2.rotate(quat2);
+
+    const fcl::CollisionGeometry<double> *s1 = con.o1;
+    const fcl::CollisionGeometry<double> *s2 = con.o2;
+    bool res = fcl::distance(s1, colliderObstacle->getTransform(), s2, tf2, distReq, distRes);
+
+    std::cout << "bleh" << std::endl;
+    std::cout << distRes.min_distance << std::endl;
+  }*/
+
   return contacts;
+}
+
+
+// self collision
+template <typename S>
+std::vector<fcl::Contact<S>> RobotCollisionChecker<S>::collideSelf(){
+  fcl::test::CollisionData<double> colData;
+  robotCollisionModel->collide(&colData, fcl::test::defaultCollisionFunction);
+
+  std::vector<fcl::Contact<S>> contacts;
+  colData.result.getContacts(contacts);
+
+
+  return contacts;
+}
+
+template<typename S>
+double RobotCollisionChecker<S>::distanceTo(fcl::CollisionObject<S>* obj){
+  fcl::test::DistanceData<double> distData;
+  distData.request.enable_signed_distance = true;
+  distData.request.enable_nearest_points = true;
+  distData.request.gjk_solver_type = fcl::GST_LIBCCD;
+  
+  robotCollisionModel->distance(obj, &distData, fcl::test::defaultDistanceFunction);
+
+
+  return distData.result.min_distance;
+
 }
 
 

@@ -14,6 +14,7 @@
 #include <visualization_msgs/InteractiveMarkerPose.h>
 #include "geometry_msgs/Pose.h"
 #include <interactive_markers/interactive_marker_server.h>
+#include <sensor_msgs/JointState.h>
 
 #include <tf/transform_broadcaster.h>
 #include <tf/tf.h>
@@ -69,6 +70,10 @@ void colliderCallback(const geometry_msgs::Pose& msg) {
   colliderObstacle = generateObstacle(sejong::Vect3(msg.position.x, msg.position.y, msg.position.z), sizeBox);
 }
 
+void jointStateCallback(const sensor_msgs::JointState robotJointStates) {
+  
+}
+
 
 
 void printCollisions(std::vector<fcl::Contact<double>> collisionContacts) {
@@ -80,6 +85,7 @@ void printCollisions(std::vector<fcl::Contact<double>> collisionContacts) {
       std::cout << *((std::string*)con.o1->getUserData());
       std::cout << " and joint ";
       std::cout << ((CollisionLink<double>*)con.o2->getUserData())->link1 << "-" << ((CollisionLink<double>*)con.o2->getUserData())->link2 << std::endl;
+
     }
   }
   else{
@@ -98,6 +104,7 @@ void standardProgram(void) {
 
   ros::Publisher marker_pub = n.advertise<visualization_msgs::MarkerArray>("visualization_marker_array", 1);
   ros::Subscriber sub = n.subscribe("interactiveMarker", 10, colliderCallback);
+  ros::Subscriber sub2 = n.subscribe("/val_robot/joint_states", 10, jointStateCallback);
   ros::Rate r(NODE_RATE);
 
 
@@ -135,8 +142,10 @@ void standardProgram(void) {
 
 
     std::vector<fcl::Contact<double>> collisionContacts = valkyrie_collision_checker->collideWith(colliderObstacle);
+    double distance = valkyrie_collision_checker->distanceTo(colliderObstacle);
 
-    //printCollisions(collisionContacts);
+    std::cout << "Distance: " << distance << std::endl;
+    printCollisions(collisionContacts);
    
     #if DEBUG
     marker_pub.publish(markerArray); 
@@ -239,13 +248,72 @@ void test(void) {
   fcl::BroadPhaseCollisionManager<double> *modelCollider = new fcl::SaPCollisionManager<double>();
   // Create collision objects to place into a model
   std::vector<fcl::CollisionObject<double>*> env;
+
+
+  fcl::Cylinder<double> fcl_cyl2(.08, 1);
+  fcl::Transform3<double> collisionTran2;
+  sejong::Vect3 position_final2 = sejong::Vect3(100,.4,.4); //calcMidpoint(vec, vec1);
+
+  // position_final[2] -= .12; // fixing for the rotation
+  collisionTran2.translation() = position_final2;
+  std::shared_ptr<fcl::CollisionGeometry<double>> fcl_colGeo2(&fcl_cyl);
+  fcl::CollisionObject<double> fcl_colObj2(fcl_colGeo, collisionTran2);
+  fcl_colObj2.setQuatRotation(newOrientation);
+
+
+
+
+
+  // copied
+  // Declare two spheres of radius 20 and 10
+  fcl::Sphere<double> s1{20};
+  fcl::Sphere<double> s2{10};
+
+  // Create a 3x4 matrix (3 x 3+1)
+  fcl::Transform3<double> tf1{fcl::Transform3<double>::Identity()};
+  fcl::Transform3<double> tf2{fcl::Transform3<double>::Identity()};
+
+  // Set up a distance request and fill in parameters(DistanceRequest has only a default constructor)
+  fcl::DistanceRequest<double> request;
+  request.enable_signed_distance = true;
+  request.enable_nearest_points = true;
+  request.gjk_solver_type = fcl::GST_LIBCCD;
+
+  fcl::DistanceResult<double> result;
+
+  bool res{false};
+  // Expecting distance to be -5
+  result.clear();
+  tf2.translation() = fcl::Vector3<double>(23, 0, 0);
+  res = distance(&s1, tf1, &s2, tf2, request, result);
+  std::cout << "result.min_distance" << std::endl;
+  std::cout << result.min_distance << std::endl;
+
+
+
+
   env.push_back(&fcl_colObj);
+
+
 
   // add the collision object to the model collider
   modelCollider->registerObjects(env);
 
   // Initialize the manager
   modelCollider->setup();
+
+
+  // Random test
+  fcl::DistanceRequest<double> distReq;
+  fcl::DistanceResult<double> distRes;
+
+  distance(&fcl_colObj, &fcl_colObj2, distReq, distRes);
+
+  std::cout << "Distance is " << distRes.min_distance << std::endl;
+
+
+
+
 
   std::cout << "ROS Loop start" << std::endl;
   while(ros::ok()) {
@@ -254,7 +322,7 @@ void test(void) {
     marker_pub.publish(markerArray); 
     fcl::test::CollisionData<double> *colData = new fcl::test::CollisionData<double>();
     modelCollider->collide(colliderObstacle, colData, fcl::test::defaultCollisionFunction);
-    std::cout << "There are " << colData->result.numContacts() << " collisions, yay!" << std::endl;
+    // std::cout << "There are " << colData->result.numContacts() << " collisions, yay!" << std::endl;
     // std::vector<fcl::Contact<double>> collisionContacts = valkyrie_collision_checker->collideWith(colliderObstacle);
     r.sleep();
   }
@@ -268,6 +336,7 @@ int main(int argc, char** argv) {
   ros::init(argc, argv, "fcl_tests");
 
   standardProgram();
+  // test();
   return -1;
 }
 

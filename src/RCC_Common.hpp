@@ -18,7 +18,7 @@ enum collisionLinkType{
 // radius in m
 #define armWidth .085
 #define legWidth .11
-#define torsoDepth .2
+#define torsoDepth .3
 
 #endif
 

@@ -58,6 +58,10 @@ public:
    */
   std::vector<fcl::Contact<S>> collideWith(fcl::CollisionObject<S>* obj);
 
+  std::vector<fcl::Contact<S>> collideSelf(void);
+
+  double distanceTo(fcl::CollisionObject<S>* obj);
+
   std::vector<visualization_msgs::Marker> generateMarkers(void);
 };
 
