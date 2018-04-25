@@ -56,9 +56,9 @@ public:
    *            these internal classes have a function called getUserData which returns a pointer
    *            to whatever data you put in it
    */
-  std::vector<fcl::Contact<S>> collideWith(fcl::CollisionObject<S>* obj);
+  fcl::CollisionResult<S> collideWith(fcl::CollisionObject<S>* obj);
 
-  std::vector<fcl::Contact<S>> collideSelf(void);
+  fcl::CollisionResult<S> collideSelf(void);
 
   double distanceTo(fcl::CollisionObject<S>* obj);
 

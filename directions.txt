@@ -16,6 +16,9 @@ SAP - sweep and prune
 
 FCL surrounds a cylinder with a hexagonal prism to find collisions
 
-check distance between environment object and robot links
+check distance between robot links
 cartesian product of collision objects and robot objects
 collide with self
+
+
+I don't know why there are 4 collisions for the torso box

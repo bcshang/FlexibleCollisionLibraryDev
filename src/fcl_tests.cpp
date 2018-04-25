@@ -75,38 +75,41 @@ void jointStateCallback(const sensor_msgs::JointState robotJointStates) {
 }
 
 
+/**
+ * Prints collision information between the collision box and Valkyrie
+ * @param result Collision result of valkyrie collision with colliderBox
+ */
+void printCollisions(fcl::CollisionResult<double> result) {
+  std::vector<fcl::Contact<double>> collisionContacts;
 
-void printCollisions(std::vector<fcl::Contact<double>> collisionContacts) {
- std::cout << "Number of collisions: " << collisionContacts.size() << std::endl;
- if(collisionContacts.size() > 0) {
+  result.getContacts(collisionContacts);
+  std::cout << "Number of collisions: " << collisionContacts.size() << std::endl;
+  if(collisionContacts.size() > 0) {
     for(int i=0; i<collisionContacts.size(); i++) {
       fcl::Contact<double> con = collisionContacts[i];
       std::cout << "Collision Between: ";
       std::cout << *((std::string*)con.o1->getUserData());
       std::cout << " and joint ";
       std::cout << ((CollisionLink<double>*)con.o2->getUserData())->link1 << "-" << ((CollisionLink<double>*)con.o2->getUserData())->link2 << std::endl;
-
+      std::cout << "Penetration depth: " << con.penetration_depth << 
+                  " \nwith vector from box to joint being: \n" << con.normal <<
+                  " \nat position " << con.pos << std::endl;    
     }
   }
   else{
     std::cout << "No collisions" << std::endl;
   }
+  std::cout << std::endl;
 }
 
+/**
+ * Standard testing program
+ */
 void standardProgram(void) {
   boxString = new std::string("box");
 
   // Start ROS things
   ros::NodeHandle n;
-
-  // temporary declaration
-  colliderObstacle = generateObstacle(sejong::Vect3(100, 100, 100), .25);
-
-  ros::Publisher marker_pub = n.advertise<visualization_msgs::MarkerArray>("visualization_marker_array", 1);
-  ros::Subscriber sub = n.subscribe("interactiveMarker", 10, colliderCallback);
-  ros::Subscriber sub2 = n.subscribe("/val_robot/joint_states", 10, jointStateCallback);
-  ros::Rate r(NODE_RATE);
-
 
 
   // Get Valkyrie information
@@ -119,6 +122,19 @@ void standardProgram(void) {
   std::cout << "Robot collision Checker generated" << std::endl;
   valkyrie_collision_checker->generateRobotCollisionModel();
   std::cout << "Valkyrie FCL Model Constructed" << std::endl;
+
+  
+
+  // temporary declaration
+  colliderObstacle = generateObstacle(sejong::Vect3(100, 100, 100), .25);
+
+  ros::Publisher marker_pub = n.advertise<visualization_msgs::MarkerArray>("visualization_marker_array", 1);
+  ros::Subscriber sub = n.subscribe("interactiveMarker", 10, colliderCallback);
+  ros::Subscriber sub2 = n.subscribe("/val_robot/joint_states", 10, jointStateCallback);
+  ros::Rate r(NODE_RATE);
+
+
+
 
 
   // Visualization markers for the FCL objects
@@ -140,12 +156,10 @@ void standardProgram(void) {
   while(ros::ok()) {    
     ros::spinOnce();
 
-
-    std::vector<fcl::Contact<double>> collisionContacts = valkyrie_collision_checker->collideWith(colliderObstacle);
-    double distance = valkyrie_collision_checker->distanceTo(colliderObstacle);
-
-    std::cout << "Distance: " << distance << std::endl;
-    printCollisions(collisionContacts);
+    fcl::CollisionResult<double> val_collision_result = valkyrie_collision_checker->collideWith(colliderObstacle);
+    // std::vector<fcl::Contact<double>> collisionContacts = valkyrie_collision_checker->collideWith(colliderObstacle);
+    // double distance = valkyrie_collision_checker->distanceTo(colliderObstacle);
+    printCollisions(val_collision_result);
    
     #if DEBUG
     marker_pub.publish(markerArray); 

@@ -104,7 +104,7 @@ void RobotCollisionChecker<S>::generateRobotCollisionModel() {
   robot_model->getPosition(robot_q, SJLinkID::LK_leftShoulderPitchLink, joint2Pos);
   double torsoWidth = calcDistance(joint1Pos, joint2Pos);
   
-  // get hips to calculat height
+  // get hips to calculate height
   sejong::Vect3 temphip1;
   sejong::Vect3 temphip2;
   robot_model->getPosition(robot_q, SJLinkID::LK_leftHipYawLink, temphip1);
@@ -133,7 +133,8 @@ void RobotCollisionChecker<S>::generateRobotCollisionModel() {
 
 
 /**
- * 
+ * Grabs all joint markers from the joints for RVIZ visualization
+ * @return visualization_msgs::Marker for all joints in a vector
  */
 template <typename S>
 std::vector<visualization_msgs::Marker> RobotCollisionChecker<S>::generateMarkers(void){
@@ -158,71 +159,34 @@ extern fcl::CollisionObject<double> *colliderObstacle;
  *            to whatever data you put in it
  */
 template <typename S>
-std::vector<fcl::Contact<S>> RobotCollisionChecker<S>::collideWith(fcl::CollisionObject<S>* obj){
+fcl::CollisionResult<S> RobotCollisionChecker<S>::collideWith(fcl::CollisionObject<S>* obj){
   // Run FCL's collide function
   fcl::test::CollisionData<double> colData;
+  colData.request.num_max_contacts = 5; // Maximum number of contacts that will be returned by the function
+  colData.request.enable_contact = true;
   robotCollisionModel->collide(obj, &colData, fcl::test::defaultCollisionFunction);
   
   // Grab all contact data
-  std::vector<fcl::Contact<S>> contacts;
-  colData.result.getContacts(contacts);
+  // std::vector<fcl::Contact<S>> contacts;
+  // colData.result.getContacts(contacts);
 
-  /*if(contacts.size() > 0){
-    fcl::Contact<double> con = contacts[0];
-    double distance;
-    fcl::DistanceRequest<double> distReq;
-    distReq.enable_signed_distance = true;
-    distReq.enable_nearest_points = true;
-    distReq.gjk_solver_type = fcl::GST_LIBCCD;
-    
-    fcl::DistanceResult<double> distRes;
-
-    std::cout << "debug1" << std::endl;
-    // Extract the joint number
-    // TODO joint1 is the box....
-    int numJoint2 = ((CollisionLink<double>*) con.o2->getUserData())->link1;
-
-    sejong::Vect3 pos2;
-    robot_model->getPosition(robot_q, numJoint2, pos2);
-    
-    
-    fcl::Transform3<double> tf2;
-
-    
-    tf2.translation() = pos2;
-    
-    
-    
-    sejong::Quaternion quat2;
-    
-    robot_model->getOrientation(robot_q, numJoint2, quat2);
-    
-    
-    tf2.rotate(quat2);
-
-    const fcl::CollisionGeometry<double> *s1 = con.o1;
-    const fcl::CollisionGeometry<double> *s2 = con.o2;
-    bool res = fcl::distance(s1, colliderObstacle->getTransform(), s2, tf2, distReq, distRes);
-
-    std::cout << "bleh" << std::endl;
-    std::cout << distRes.min_distance << std::endl;
-  }*/
-
-  return contacts;
+  return colData.result;
 }
 
 
 // self collision
 template <typename S>
-std::vector<fcl::Contact<S>> RobotCollisionChecker<S>::collideSelf(){
+fcl::CollisionResult<S> RobotCollisionChecker<S>::collideSelf(){
   fcl::test::CollisionData<double> colData;
+  colData.request.num_max_contacts = 5; // Maximum number of contacts that will be returned by the function
+  colData.request.enable_contact = true;
   robotCollisionModel->collide(&colData, fcl::test::defaultCollisionFunction);
 
-  std::vector<fcl::Contact<S>> contacts;
-  colData.result.getContacts(contacts);
+  // std::vector<fcl::Contact<S>> contacts;
+  // colData.result.getContacts(contacts);
 
 
-  return contacts;
+  return colData.result;
 }
 
 template<typename S>
