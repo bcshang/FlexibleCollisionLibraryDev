@@ -1,5 +1,20 @@
 #ifndef __COLLISION_LINK_HPP
 #define __COLLISION_LINK_HPP
+/**
+ * Description updated: April 24, 2018
+ * 
+ * This class is meant as an FCL abstraction to a joint.
+ * 
+ *     By providing the two link enumerations and a link type (leg, arm, torso, etc. which is defined in RCC_Common.hpp)
+ * it will generate a collision object based on a passed in valkyrie joint configuration and a hard coded shape. Look at
+ * RCC_Common.hpp for link size definitions.
+ *
+ *     I also provide a special function to generate a collision object based on passed in x,y,z sizes that I use for 
+ * torso/head generation. 
+ */
+
+
+
 #include "RCC_Common.hpp"
 #include <Utils/wrap_eigen.hpp>
 #include <Utils/utilities.hpp>
@@ -14,7 +29,7 @@
 #include "helpfulMath.hpp"
 #include <iostream>
 
-#ifdef DEBUG
+#ifdef SHOWMARKERS
 #include "markerGeneration.hpp"
 #endif
 
@@ -24,6 +39,7 @@ public:
     int link1; // SJLinkID's
     int link2;
     int linkType;
+    int markerID;
 
     std::shared_ptr<fcl::ShapeBase<S> > collisionShape; // Shape
     fcl::Transform3<S> collisionTran;   // transformation
@@ -31,11 +47,12 @@ public:
     fcl::CollisionObject<S>* collisionObj;   // collision object
     RobotModel* robot_model;
 
-    #if DEBUG
+    #if SHOWMARKERS
     visualization_msgs::Marker jointMarker;
     #endif
 
     CollisionLink(int firstlink, int secondlink, int linkType);
+    CollisionLink(int firstlink, int secondlink, int linkType, int markerID);
     ~CollisionLink();
 
     fcl::CollisionObject<S>* computeCollisionObject(sejong::Vector& robot_q);

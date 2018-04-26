@@ -1,5 +1,13 @@
 #ifndef __ROBOT_COLLISION_CHECKER_HPP
 #define __ROBOT_COLLISION_CHECKER_HPP
+/**
+ * Description updated: April 24, 2018
+ * 
+ * Main object to be created to check collisions between valkyrie and the world or valkyrie and itself
+ *
+ * 
+ */
+
 
 #include <vector>
 
@@ -22,46 +30,69 @@
 template <typename S>
 class RobotCollisionChecker{
 public:
-
+  // vector of joint ID's for respective joints
   std::vector<int> rightArmJoints;
   std::vector<int> leftArmJoints;
   std::vector<int> rightLegJoints;
   std::vector<int> leftLegJoints;
   std::vector<int> torsoJoints;
 
+  // Robot model
   RobotModel* robot_model;
   sejong::Vector robot_q;
   sejong::Vector robot_qdot;
+
+  // FCL things
   fcl::BroadPhaseCollisionManager<S> *robotCollisionModel; 
   std::vector<fcl::CollisionObject<S>*> robot_env;
-  std::vector<CollisionLink<S>> collisionLinks;
-  RobotCollisionChecker();
 
+  // Vector of all joints in the robot
+  std::vector<CollisionLink<S>> collisionLinks;
+
+  int markerNumber; // visualization things
+
+  // Main constructor
+  // Will maintain internal copy of m_q and m_qdot
   RobotCollisionChecker(sejong::Vector m_q, sejong::Vector m_qdot);
   
+  // main destructor
   ~RobotCollisionChecker();
 
 
   /**
    * Recompute internal BroadPhaseCollisionManager to run collisions against objects
-   * Will use robot_q and robot_qdot to calculate joint positions and generate collision objects
+   * Will use internal robot_q and robot_qdot to calculate joint positions and generate collision objects
    */
   void generateRobotCollisionModel();
 
+   
   /**
    * Main colliding function
-   * 
    * @param obj       Collision Object to see if the robot is colliding with
-   * @return    vector of all Contacts. To extract data, o1 and o2 are internal CollisionGeometry
-   *            these internal classes have a function called getUserData which returns a pointer
-   *            to whatever data you put in it
+   * @return    Result of the collision, documentation at: http://gamma.cs.unc.edu/FCL/fcl_docs/webpage/generated/structfcl_1_1CollisionResult.html
+   *            
+   *            In my experience, the first object will be obj and the second will be a valkyrie link
    */
   fcl::CollisionResult<S> collideWith(fcl::CollisionObject<S>* obj);
 
+  // self collision
   fcl::CollisionResult<S> collideSelf(void);
 
+  /**
+   * Calculates the minimum distance to a collision object
+   * @param obj the object to check distance to
+   * @return the minimum distance to the object (can be negative)
+   */
   double distanceTo(fcl::CollisionObject<S>* obj);
 
+  // Update internal variables
+  void updateQ(sejong::Vector m_q);
+  void updateQ_Dot(sejong::Vector m_qdot);
+
+  /**
+   * Grabs all joint markers from the joints for RVIZ visualization
+   * @return visualization_msgs::Marker for all joints in a vector
+   */
   std::vector<visualization_msgs::Marker> generateMarkers(void);
 };
 

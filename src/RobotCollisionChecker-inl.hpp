@@ -11,17 +11,11 @@
 #include <iostream>
 
 /**
- * Default Constructor
- */
-template <typename S>
-RobotCollisionChecker<S>::RobotCollisionChecker(){};
-
-/**
  * Actually use this constructor please
  */
 template <typename S>
 RobotCollisionChecker<S>::RobotCollisionChecker(sejong::Vector m_q, sejong::Vector m_qdot){
-  
+  markerNumber = 0;
   // Get the robot model
   robot_model = RobotModel::GetRobotModel();
 
@@ -56,24 +50,22 @@ RobotCollisionChecker<S>::RobotCollisionChecker(sejong::Vector m_q, sejong::Vect
   torsoJoints.push_back(SJLinkID::LK_neckYawLink);
   torsoJoints.push_back(SJLinkID::LK_upperNeckPitchLink);
 
-  // Populate all joints as collision link objects
+  // Populate all joints as collision link objects (class I defined)
   for(int i=0; i<rightArmJoints.size()-1; i++){
-    collisionLinks.push_back(CollisionLink<S>(rightArmJoints[i], rightArmJoints[i+1], CLT_appendage_arm));
+    collisionLinks.push_back(CollisionLink<S>(rightArmJoints[i], rightArmJoints[i+1], CLT_appendage_right_arm, markerNumber++));
   }
   for(int i=0; i<leftArmJoints.size()-1; i++){
-    collisionLinks.push_back(CollisionLink<S>(leftArmJoints[i], leftArmJoints[i+1], CLT_appendage_arm));
+    collisionLinks.push_back(CollisionLink<S>(leftArmJoints[i], leftArmJoints[i+1], CLT_appendage_left_arm, markerNumber++));
   }
   for(int i=0; i<rightLegJoints.size()-1; i++){
-    collisionLinks.push_back(CollisionLink<S>(rightLegJoints[i], rightLegJoints[i+1], CLT_appendage_leg));
+    collisionLinks.push_back(CollisionLink<S>(rightLegJoints[i], rightLegJoints[i+1], CLT_appendage_leg, markerNumber++));
   }
   for(int i=0; i<leftLegJoints.size()-1; i++){
-    collisionLinks.push_back(CollisionLink<S>(leftLegJoints[i], leftLegJoints[i+1], CLT_appendage_leg));
+    collisionLinks.push_back(CollisionLink<S>(leftLegJoints[i], leftLegJoints[i+1], CLT_appendage_leg, markerNumber++));
   }
-  // for(int i=0; i<torsoJoints.size()-1; i++){
-  //   collisionLinks.push_back(CollisionLink<S>(torsoJoints[i], torsoJoints[i+1], CLT_torso));
-  // }
 
-
+  // Add the torso
+  collisionLinks.push_back(CollisionLink<S>(SJLinkID::LK_torso, LK_neckYawLink, CLT_torso, markerNumber++));
 }
 
 /**
@@ -84,15 +76,45 @@ RobotCollisionChecker<S>::~RobotCollisionChecker(){
   delete robotCollisionModel;
 }
 
+
+
+// Updater
+template <typename S>
+void RobotCollisionChecker<S>::updateQ(sejong::Vector m_q) {
+  robot_q = m_q;
+  robot_model->UpdateModel(robot_q, robot_qdot);  
+}
+
+
+// Updater
+template <typename S>
+void RobotCollisionChecker<S>::updateQ_Dot(sejong::Vector m_qdot){
+  robot_qdot = m_qdot;
+  robot_model->UpdateModel(robot_q, robot_qdot);  
+}
+
+
+
+
+
+
 /**
  * Generates BroadPhaseCollision Manager to run collisions against objects
  */
 template <typename S>
 void RobotCollisionChecker<S>::generateRobotCollisionModel() {
   robot_env.clear();
+  // This will also delete all collision objects so deletion within the collisionlink class is not necessary
+  robotCollisionModel->clear();
+
+
   // Collision environment is a class variable
   for(int i=0; i<collisionLinks.size(); i++){
-    robot_env.push_back(collisionLinks[i].computeCollisionObject(robot_q));
+    // Only add arms and legs. Torso and head must be done specially
+    if(collisionLinks[i].linkType == collisionLinkType::CLT_appendage_left_arm || 
+      collisionLinks[i].linkType == collisionLinkType::CLT_appendage_right_arm ||
+      collisionLinks[i].linkType == collisionLinkType::CLT_appendage_leg)
+        robot_env.push_back(collisionLinks[i].computeCollisionObject(robot_q));
   }
 
   // Torso must be done specially and really jankly
@@ -115,14 +137,8 @@ void RobotCollisionChecker<S>::generateRobotCollisionModel() {
   robot_model->getPosition(robot_q, SJLinkID::LK_neckYawLink, joint2Pos);
   double torsoHeight = calcDistance(joint1Pos, joint2Pos);
 
-  // Actually add it to the model
-  collisionLinks.push_back(CollisionLink<S>(SJLinkID::LK_torso, LK_neckYawLink, CLT_torso));
+
   robot_env.push_back(collisionLinks[collisionLinks.size()-1].computeCollisionObject(robot_q, torsoDepth, torsoWidth, torsoHeight));
-
-
-
-
-  robotCollisionModel->clear();
 
   // add the collision object to the model collider
   robotCollisionModel->registerObjects(robot_env);
@@ -148,22 +164,21 @@ std::vector<visualization_msgs::Marker> RobotCollisionChecker<S>::generateMarker
 }
 
 
-// TODO fix this for actual objects
-extern fcl::CollisionObject<double> *colliderObstacle;
 /**
  * Main colliding function
  * 
  * @param obj       Collision Object to see if the robot is colliding with
- * @return    vector of all Contacts. To extract data, o1 and o2 are internal CollisionGeometry
- *            these internal classes have a function called getUserData which returns a pointer
- *            to whatever data you put in it
+ * @return    Result of the collision, documentation at: http://gamma.cs.unc.edu/FCL/fcl_docs/webpage/generated/structfcl_1_1CollisionResult.html
+ *            
+ *            In my experience, the first object will be obj and the second will be a valkyrie link
  */
 template <typename S>
 fcl::CollisionResult<S> RobotCollisionChecker<S>::collideWith(fcl::CollisionObject<S>* obj){
   // Run FCL's collide function
   fcl::test::CollisionData<double> colData;
   colData.request.num_max_contacts = 5; // Maximum number of contacts that will be returned by the function
-  colData.request.enable_contact = true;
+  colData.request.enable_contact = true; // Tell the request to generate things like penetration depth and location
+
   robotCollisionModel->collide(obj, &colData, fcl::test::defaultCollisionFunction);
   
   // Grab all contact data
@@ -189,6 +204,11 @@ fcl::CollisionResult<S> RobotCollisionChecker<S>::collideSelf(){
   return colData.result;
 }
 
+/**
+ * Calculates the minimum distance to a collision object
+ * @param obj the object to check distance to
+ * @return the minimum distance to the object (can be negative)
+ */
 template<typename S>
 double RobotCollisionChecker<S>::distanceTo(fcl::CollisionObject<S>* obj){
   fcl::test::DistanceData<double> distData;

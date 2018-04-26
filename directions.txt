@@ -1,24 +1,27 @@
-
 Follow FCL README Instructions (install libccd, optionally octomap, then install fcl)
 
-Copy CMakeLists.txt
-
+Vocabulary:
 BVH = bounded volume hierarchy - tree structure that divides objects into bounding groups (boxes) to help separate them
-
 AABB = axis-aligned bounding box (minimum bounding box such that the edges are parallel to the cartesian axes)
-
 OBB = oriented bounding box
-
 RSS - rectangle sphere swept bounding volume
-
 SAP - sweep and prune
 
-
+General Notes about FCL functionality:
 FCL surrounds a cylinder with a hexagonal prism to find collisions
+I think fcl will automatically delete collision objects when the collision manager is cleared. If an out of memory exception occurs, it might be the CollisionLink not properly deallocating the collision object
 
+TODO List:
+allow for updating of joints
 check distance between robot links
-cartesian product of collision objects and robot objects
-collide with self
+collide with self - for this, ignore any that have a similar joint number
+figure out how to make an item without using new
+fix the freaking collision link types
+write an update
+I don't know why there are multiple collisions for the torso box
+I don't know why the torso sometimes doesn't register properly
+the joint orienatation thing won't work for the left arm because of how I build the objects
 
 
-I don't know why there are 4 collisions for the torso box
+Updates:
+    1. I don't know how to do a nice cartesian product but I can return the distance

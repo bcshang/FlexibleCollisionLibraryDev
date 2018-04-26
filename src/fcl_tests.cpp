@@ -44,31 +44,44 @@
 
 fcl::CollisionObject<double> *colliderObstacle;
 std::string *boxString;
-// TODO figure out how to make it so that all things are persistent without using "new"
-// size is 5cm
+/**
+ * Called by the callback to update the FCL object used to collide with Valkyrie
+ * @param location position of the box
+ * @param size size of the box
+ * @return fcl collision object
+ */
 fcl::CollisionObject<double>* generateObstacle(sejong::Vect3 location, double size) {
   // declare a box
   fcl::Box<double> *obstacleCube = new fcl::Box<double>(size, size, size);
-  
-  //fcl::BVHModel<fcl::OBBRSS<double>> *colliderModel = new fcl::BVHModel<fcl::OBBRSS<double>>();
-  
+  // Declare a transform (just a translation for now)
   fcl::Transform3<double> obstacleTransform = fcl::Transform3<double>(fcl::Translation3<double>(location));
   
-  // generateBVHModel(*colliderModel, obstacleCube, obstacleTransform);
+  // Declare a collision geometry
   std::shared_ptr<fcl::CollisionGeometry<double>> colGeom(obstacleCube);
-  // std::string *str = new std::string("box");
+  
+  // Set the user data as simply a string
   colGeom->setUserData(boxString);
+
+
   fcl::CollisionObject<double>* colliderObject = new fcl::CollisionObject<double>(colGeom, obstacleTransform);
   colliderObject->setUserData(boxString);
   return colliderObject;
 }
 
+
+
+/**
+ * ROS calls this whenever a new Pose message is sent from the Collider cube
+ * @param msg message sent by another node to update the collision box
+ */
 void colliderCallback(const geometry_msgs::Pose& msg) {
   // delete colliderObstacle->getUserData();
   delete colliderObstacle;
   // need to fix for how fcl vs ros denotes markers
   colliderObstacle = generateObstacle(sejong::Vect3(msg.position.x, msg.position.y, msg.position.z), sizeBox);
 }
+
+
 
 void jointStateCallback(const sensor_msgs::JointState robotJointStates) {
   
@@ -113,10 +126,14 @@ void standardProgram(void) {
 
 
   // Get Valkyrie information
+  // This is done early because Valkyrie will sometimes lose its body otherwise
   sejong::Vector m_q; m_q.resize(NUM_Q); m_q.setZero();
   sejong::Vector m_qdot; m_qdot.resize(NUM_QDOT); m_qdot.setZero();
 
   m_q[NUM_QDOT] = 1.0;
+  m_q[NUM_VIRTUAL+SJJointID::rightShoulderRoll] = 0.5;
+  m_q[NUM_VIRTUAL+SJJointID::leftShoulderRoll] = 0.5;
+
 
   RobotCollisionChecker<double> *valkyrie_collision_checker = new RobotCollisionChecker<double>(m_q, m_qdot);
   std::cout << "Robot collision Checker generated" << std::endl;
@@ -125,45 +142,40 @@ void standardProgram(void) {
 
   
 
-  // temporary declaration
+  // temporary declaration so the callback doesn't crash
   colliderObstacle = generateObstacle(sejong::Vect3(100, 100, 100), .25);
 
-  ros::Publisher marker_pub = n.advertise<visualization_msgs::MarkerArray>("visualization_marker_array", 1);
-  ros::Subscriber sub = n.subscribe("interactiveMarker", 10, colliderCallback);
-  ros::Subscriber sub2 = n.subscribe("/val_robot/joint_states", 10, jointStateCallback);
+  ros::Publisher marker_pub = n.advertise<visualization_msgs::MarkerArray>("visualization_marker_array", 10); // Publish markers to RVIZ
+  ros::Subscriber sub = n.subscribe("interactiveMarker", 10, colliderCallback); // Update internal FCL object for the interactive marker
+  // ros::Subscriber sub2 = n.subscribe("/val_robot/joint_states", 10, jointStateCallback); 
   ros::Rate r(NODE_RATE);
 
 
 
-
-
-  // Visualization markers for the FCL objects
-  #if DEBUG  
-  std::vector<visualization_msgs::Marker> markerVector; 
-  markerVector = valkyrie_collision_checker->generateMarkers();
-  // Set up array markers message
-  visualization_msgs::MarkerArray markerArray;
-  markerArray.markers.resize(markerVector.size());
-
-  // add markers to message
-  for(int i=0; i<markerVector.size(); i++) {
-    markerArray.markers[i] = markerVector[i];
-  }
-  #endif
-  
-
   std::cout << "ROS Loop start" << std::endl;
+  int i = 0;
   while(ros::ok()) {    
     ros::spinOnce();
+    #if SHOWMARKERS
+    // Visualization markers for the FCL objects
+    std::vector<visualization_msgs::Marker> markerVector; 
+    markerVector = valkyrie_collision_checker->generateMarkers();
+    // Set up array markers message
+    visualization_msgs::MarkerArray markerArray;
+    markerArray.markers.resize(markerVector.size());
+
+    // add markers to message
+    for(int i=0; i<markerVector.size(); i++) {
+      markerArray.markers[i] = markerVector[i];
+    }
+    marker_pub.publish(markerArray); 
+    #endif
 
     fcl::CollisionResult<double> val_collision_result = valkyrie_collision_checker->collideWith(colliderObstacle);
     // std::vector<fcl::Contact<double>> collisionContacts = valkyrie_collision_checker->collideWith(colliderObstacle);
-    // double distance = valkyrie_collision_checker->distanceTo(colliderObstacle);
+    double distance = valkyrie_collision_checker->distanceTo(colliderObstacle);
+    std::cout << "Distance to object is " << distance << std::endl;
     printCollisions(val_collision_result);
-   
-    #if DEBUG
-    marker_pub.publish(markerArray); 
-    #endif
 
     r.sleep();
   }

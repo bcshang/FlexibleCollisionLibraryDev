@@ -1,3 +1,4 @@
+#include <iostream>
 #include <ros/ros.h>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
@@ -21,7 +22,6 @@ int markernum = 0;
  */
 visualization_msgs::Marker createMarker(double x_pos, double y_pos, double z_pos) {
   visualization_msgs::Marker marker;
-  static int markernum = 0;
 
   int shape = visualization_msgs::Marker::CUBE;
 
@@ -83,17 +83,17 @@ visualization_msgs::Marker createMarker(sejong::Vect3 pos) {
  * @param  height height
  * @return      ROS Marker message
  */
-visualization_msgs::Marker createCylinder(double radius, double height) {
+visualization_msgs::Marker createCylinder(double radius, double height, int markerID) {
   visualization_msgs::Marker marker;
 
   int shape = visualization_msgs::Marker::CYLINDER;
-
+  // std::cout << "Create called with marker ID: " << markerID << std::endl;
 
   marker.header.frame_id = "/val_robot/pelvis";
   marker.header.stamp = ros::Time::now();
 
-  marker.ns = "basic_shapes";
-  marker.id = markernum;
+  marker.ns = "val_shapes";
+  marker.id = markerID;
   markernum++;
 
   // Set the marker shape
@@ -128,7 +128,7 @@ visualization_msgs::Marker createCylinder(double radius, double height) {
 }
 
 
-visualization_msgs::Marker createBox(double x_size, double y_size, double z_size){
+visualization_msgs::Marker createBox(double x_size, double y_size, double z_size, int markerID){
   visualization_msgs::Marker marker;
 
   int shape = visualization_msgs::Marker::CUBE;
@@ -137,8 +137,8 @@ visualization_msgs::Marker createBox(double x_size, double y_size, double z_size
   marker.header.frame_id = "/val_robot/pelvis";
   marker.header.stamp = ros::Time::now();
 
-  marker.ns = "basic_shapes";
-  marker.id = markernum;
+  marker.ns = "val_shapes";
+  marker.id = markerID;
   markernum++;
 
   // Set the marker shape

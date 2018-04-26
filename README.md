@@ -28,15 +28,23 @@ fcl::CollisionObject<double>* insertName = new fcl::CollisionObject<double>(Geom
 1. Do the above steps to create collision objects for each robot link
 2. Put all collision objects in a vector
 3. Declare a collision manager (I chose to go with sweep and prune somewhat arbitrarily)
-4. setup
+4. register objects in that vector
+5. setup
 
 *Looping now where the robot model is updating*
 *You can do multiple things from here depending on how you setup your objects*
 
 **slow version where you recreated every object every iteration**
-5. clear the model
-6. register objects again
-7. update()
+6. clear the model
+7. register objects again
+8. update()
 
 **fast version that is probably wrong?**
-5. update(collision objects vector)????????????
+6. update(collision objects vector)????????????
+
+
+
+
+
+### Notes about my wrappers
+
