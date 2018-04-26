@@ -5,6 +5,7 @@
 #include <vector>
 #include <math.h>
 #include <cstring>
+#include <map>
 
 // ROS things
 #include <ros/ros.h>
@@ -41,7 +42,8 @@
 
 
 
-
+std::map<std::string, int> jointName2ID;
+sejong::Vector m_q; // Main robot_q
 fcl::CollisionObject<double> *colliderObstacle;
 std::string *boxString;
 /**
@@ -84,7 +86,13 @@ void colliderCallback(const geometry_msgs::Pose& msg) {
 
 
 void jointStateCallback(const sensor_msgs::JointState robotJointStates) {
-  
+  std::cout << "Joint state callback" << std::endl;
+  for(int i=0; i<robotJointStates.name.size(); i++) {
+    if (jointName2ID.find(robotJointStates.name[i]) != jointName2ID.end() ) {
+      m_q[jointName2ID[robotJointStates.name[i]] + NUM_VIRTUAL] = robotJointStates.position[i];
+    }
+  }
+  // std::cout << m_q << std::endl;
 }
 
 
@@ -121,19 +129,48 @@ void printCollisions(fcl::CollisionResult<double> result) {
 void standardProgram(void) {
   boxString = new std::string("box");
 
+  // Build joint table
+  jointName2ID.insert(std::make_pair("leftHipYaw", 0));
+  jointName2ID.insert(std::make_pair("leftHipRoll", 1));
+  jointName2ID.insert(std::make_pair("leftHipPitch", 2));
+  jointName2ID.insert(std::make_pair("leftKneePitch", 3));
+  jointName2ID.insert(std::make_pair("leftAnklePitch", 4));
+  jointName2ID.insert(std::make_pair("leftAnkleRoll", 5));
+  jointName2ID.insert(std::make_pair("rightHipYaw", 6));
+  jointName2ID.insert(std::make_pair("rightHipRoll", 7));
+  jointName2ID.insert(std::make_pair("rightHipPitch", 8));
+  jointName2ID.insert(std::make_pair("rightKneePitch", 9));
+  jointName2ID.insert(std::make_pair("rightAnklePitch", 10));
+  jointName2ID.insert(std::make_pair("rightAnkleRoll", 11));
+  jointName2ID.insert(std::make_pair("torsoYaw", 12));
+  jointName2ID.insert(std::make_pair("torsoPitch", 13));
+  jointName2ID.insert(std::make_pair("torsoRoll", 14));
+  jointName2ID.insert(std::make_pair("leftShoulderPitch", 15));
+  jointName2ID.insert(std::make_pair("leftShoulderRoll", 16));
+  jointName2ID.insert(std::make_pair("leftShoulderYaw", 17));
+  jointName2ID.insert(std::make_pair("leftElbowPitch", 18));
+  jointName2ID.insert(std::make_pair("leftForearmYaw", 19));
+  jointName2ID.insert(std::make_pair("lowerNeckPitch", 20));
+  jointName2ID.insert(std::make_pair("neckYaw", 21));
+  jointName2ID.insert(std::make_pair("upperNeckPitch", 22));
+  jointName2ID.insert(std::make_pair("rightShoulderPitch", 23));
+  jointName2ID.insert(std::make_pair("rightShoulderRoll", 24));
+  jointName2ID.insert(std::make_pair("rightShoulderYaw", 25));
+  jointName2ID.insert(std::make_pair("rightElbowPitch", 26));
+  jointName2ID.insert(std::make_pair("rightForearmYaw", 27));
+
+
+
   // Start ROS things
   ros::NodeHandle n;
 
 
   // Get Valkyrie information
   // This is done early because Valkyrie will sometimes lose its body otherwise
-  sejong::Vector m_q; m_q.resize(NUM_Q); m_q.setZero();
+  m_q.resize(NUM_Q); m_q.setZero();
   sejong::Vector m_qdot; m_qdot.resize(NUM_QDOT); m_qdot.setZero();
 
   m_q[NUM_QDOT] = 1.0;
-  m_q[NUM_VIRTUAL+SJJointID::rightShoulderRoll] = 0.5;
-  m_q[NUM_VIRTUAL+SJJointID::leftShoulderRoll] = 0.5;
-
 
   RobotCollisionChecker<double> *valkyrie_collision_checker = new RobotCollisionChecker<double>(m_q, m_qdot);
   std::cout << "Robot collision Checker generated" << std::endl;
@@ -147,7 +184,7 @@ void standardProgram(void) {
 
   ros::Publisher marker_pub = n.advertise<visualization_msgs::MarkerArray>("visualization_marker_array", 10); // Publish markers to RVIZ
   ros::Subscriber sub = n.subscribe("interactiveMarker", 10, colliderCallback); // Update internal FCL object for the interactive marker
-  // ros::Subscriber sub2 = n.subscribe("/val_robot/joint_states", 10, jointStateCallback); 
+  ros::Subscriber sub2 = n.subscribe("/val_robot/joint_states", 10, jointStateCallback); 
   ros::Rate r(NODE_RATE);
 
 
@@ -170,6 +207,9 @@ void standardProgram(void) {
     }
     marker_pub.publish(markerArray); 
     #endif
+    
+    valkyrie_collision_checker->updateQ(m_q);
+    valkyrie_collision_checker->generateRobotCollisionModel();
 
     fcl::CollisionResult<double> val_collision_result = valkyrie_collision_checker->collideWith(colliderObstacle);
     // std::vector<fcl::Contact<double>> collisionContacts = valkyrie_collision_checker->collideWith(colliderObstacle);

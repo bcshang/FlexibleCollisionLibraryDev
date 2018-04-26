@@ -10,6 +10,7 @@ SAP - sweep and prune
 General Notes about FCL functionality:
 FCL surrounds a cylinder with a hexagonal prism to find collisions
 I think fcl will automatically delete collision objects when the collision manager is cleared. If an out of memory exception occurs, it might be the CollisionLink not properly deallocating the collision object
+I update the robot_model within the updating of the collision model. This shouldn't be a problem but may be redundant
 
 TODO List:
 allow for updating of joints
@@ -20,7 +21,7 @@ fix the freaking collision link types
 write an update
 I don't know why there are multiple collisions for the torso box
 I don't know why the torso sometimes doesn't register properly
-the joint orienatation thing won't work for the left arm because of how I build the objects
+test orientation of the legs
 
 
 Updates:

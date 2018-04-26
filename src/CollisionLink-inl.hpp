@@ -54,35 +54,29 @@ fcl::CollisionObject<S>* CollisionLink<S>::computeCollisionObject(sejong::Vector
     sejong::Vect3 fcl_position = calcMidpoint(joint1Pos, joint2Pos);
     
 
-    Eigen::Matrix3d rotation = joint1Orien.normalized().toRotationMatrix();
+    Eigen::Matrix3d rotation;
     // Apply an extra rotation if needed
-    if(linkType == collisionLinkType::CLT_appendage_right_arm) { 
+    if(linkType == collisionLinkType::CLT_appendage_right_arm) {
+    rotation = joint1Orien.normalized().toRotationMatrix(); 
         Eigen::Matrix3d extraRot; // needed because arms are based around y axis
         // rotate 90 degrees about x axis
         extraRot << 1, 0, 0,
                     0, 0, -1,
                     0, 1, 0;
-
-        // extraRot << 1, 0, 0,
-        //             0, 1, 0,
-        //             0, 0, 1;
-
         rotation = extraRot * rotation;
-        //std::cout << "Rotation post" << rotation << std::endl;
     }
     else if(linkType == collisionLinkType::CLT_appendage_left_arm) {
         rotation = joint2Orien.normalized().toRotationMatrix();
         Eigen::Matrix3d extraRot; // needed because arms are based around y axis
+        // rotate -90 degrees about x axis
         extraRot << 1, 0, 0,
                     0, 0, 1,
                     0, -1, 0;
 
-        // extraRot << 1, 0, 0,
-        //             0, 1, 0,
-        //             0, 0, 1;
-
         rotation = extraRot * rotation;
-        //std::cout << "Rotation post" << rotation << std::endl;
+    }
+    else if(linkType == collisionLinkType::CLT_appendage_leg) {
+        rotation = joint1Orien.normalized().toRotationMatrix();
     }
     
     // Actual value loaded into collision object
@@ -175,6 +169,7 @@ fcl::CollisionObject<S>* CollisionLink<S>::computeCollisionObject(sejong::Vector
 
 
     sejong::Vect3 fcl_position = calcMidpoint(joint1Pos, joint2Pos);
+    fcl_position[x] -= torsoDepth / 2;
 
     Eigen::Matrix3d rotation = joint1Orien.normalized().toRotationMatrix();
     
