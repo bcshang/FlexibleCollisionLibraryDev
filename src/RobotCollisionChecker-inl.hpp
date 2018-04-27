@@ -193,10 +193,100 @@ fcl::CollisionResult<S> RobotCollisionChecker<S>::collideWith(fcl::CollisionObje
 template <typename S>
 fcl::CollisionResult<S> RobotCollisionChecker<S>::collideSelf(){
   fcl::test::CollisionData<double> colData;
-  colData.request.num_max_contacts = 5; // Maximum number of contacts that will be returned by the function
+  colData.request.num_max_contacts = 10; // Maximum number of contacts that will be returned by the function
   colData.request.enable_contact = true;
   robotCollisionModel->collide(&colData, fcl::test::defaultCollisionFunction);
 
+  // We need to ignore any collisions with links that share a joint
+  std::vector<fcl::Contact<S>> originalContacts;
+  colData.result.getContacts(originalContacts);
+  // std::cout << "Original contacts size: " << originalContacts.size() << std::endl;
+  std::vector<fcl::Contact<S>> newContacts;
+
+  // Remove any contacts on the same linkID
+  for(int i=0; i<originalContacts.size(); i++) {
+    fcl::Contact<S> con = originalContacts[i];
+    CollisionLink<S> *col_link1 = (CollisionLink<S>*)con.o1->getUserData();
+    CollisionLink<S> *col_link2 = (CollisionLink<S>*)con.o2->getUserData();
+
+    // The torso is really sensitive so ignore anything that is right next to it. This is really ugly because I don't know
+    // whether the torso object is the first or second one
+    if(col_link1->link1 == SJLinkID::LK_torso || col_link2->link1 == SJLinkID::LK_torso) {
+      switch(col_link1->link1){
+        case LK_leftHipYawLink:
+        case LK_leftHipRollLink:
+        case LK_leftHipPitchLink:
+        case LK_rightHipYawLink:
+        case LK_rightHipRollLink:
+        case LK_rightHipPitchLink:
+        case LK_leftShoulderPitchLink:
+        case LK_leftShoulderRollLink:
+        case LK_leftShoulderYawLink:
+        case LK_rightShoulderPitchLink:
+        case LK_rightShoulderRollLink:
+        case LK_rightShoulderYawLink:
+          continue;
+      }
+      switch(col_link1->link2){
+        case LK_leftHipYawLink:
+        case LK_leftHipRollLink:
+        case LK_leftHipPitchLink:
+        case LK_rightHipYawLink:
+        case LK_rightHipRollLink:
+        case LK_rightHipPitchLink:
+        case LK_leftShoulderPitchLink:
+        case LK_leftShoulderRollLink:
+        case LK_leftShoulderYawLink:
+        case LK_rightShoulderPitchLink:
+        case LK_rightShoulderRollLink:
+        case LK_rightShoulderYawLink:
+          continue;
+      }
+      switch(col_link2->link1){
+        case LK_leftHipYawLink:
+        case LK_leftHipRollLink:
+        case LK_leftHipPitchLink:
+        case LK_rightHipYawLink:
+        case LK_rightHipRollLink:
+        case LK_rightHipPitchLink:
+        case LK_leftShoulderPitchLink:
+        case LK_leftShoulderRollLink:
+        case LK_leftShoulderYawLink:
+        case LK_rightShoulderPitchLink:
+        case LK_rightShoulderRollLink:
+        case LK_rightShoulderYawLink:
+          continue;
+      }
+      switch(col_link2->link2){
+        case LK_leftHipYawLink:
+        case LK_leftHipRollLink:
+        case LK_leftHipPitchLink:
+        case LK_rightHipYawLink:
+        case LK_rightHipRollLink:
+        case LK_rightHipPitchLink:
+        case LK_leftShoulderPitchLink:
+        case LK_leftShoulderRollLink:
+        case LK_leftShoulderYawLink:
+        case LK_rightShoulderPitchLink:
+        case LK_rightShoulderRollLink:
+        case LK_rightShoulderYawLink:
+          continue;
+      }
+    }
+
+
+
+    // If not an adjacent contact
+    if(!(col_link2->link1 == col_link1->link2 || col_link2->link2 == col_link1->link1))
+      newContacts.push_back(con);
+  }
+  colData.result.clear();
+
+  // Add the possibly shortened list back
+  for(int i=0; i<newContacts.size(); i++) {
+    colData.result.addContact(newContacts[i]);
+  }
+   
   // std::vector<fcl::Contact<S>> contacts;
   // colData.result.getContacts(contacts);
 

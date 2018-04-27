@@ -83,18 +83,19 @@ void colliderCallback(const geometry_msgs::Pose& msg) {
 }
 
 
+int jStatesUpdated = 0;
 /**
  * Callback for the joint_state subscriber
  * Will read relevant joints from the information and update global m_q accordingly
  * @param robotJointStates joint_states as a ROS message from /val_robot/joint_states
  */
 void jointStateCallback(const sensor_msgs::JointState robotJointStates) {
-  std::cout << "Joint state callback" << std::endl;
   for(int i=0; i<robotJointStates.name.size(); i++) {
     if (jointName2ID.find(robotJointStates.name[i]) != jointName2ID.end() ) {
       m_q[jointName2ID[robotJointStates.name[i]] + NUM_VIRTUAL] = robotJointStates.position[i];
     }
   }
+  jStatesUpdated = 1;
 }
 
 
@@ -102,12 +103,12 @@ void jointStateCallback(const sensor_msgs::JointState robotJointStates) {
  * Prints collision information between the collision box and Valkyrie
  * @param result Collision result of valkyrie collision with colliderBox
  */
-void printCollisions(fcl::CollisionResult<double> result) {
+void printObjCollisions(fcl::CollisionResult<double> result) {
   std::vector<fcl::Contact<double>> collisionContacts;
 
   result.getContacts(collisionContacts);
-  std::cout << "Number of collisions: " << collisionContacts.size() << std::endl;
   if(collisionContacts.size() > 0) {
+    std::cout << "Number of collisions: " << collisionContacts.size() << std::endl;
     for(int i=0; i<collisionContacts.size(); i++) {
       fcl::Contact<double> con = collisionContacts[i];
       std::cout << "Collision Between: ";
@@ -120,10 +121,37 @@ void printCollisions(fcl::CollisionResult<double> result) {
     }
   }
   else{
-    std::cout << "No collisions" << std::endl;
+    std::cout << "No obj collisions" << std::endl;
   }
   std::cout << std::endl;
 }
+
+
+void printSelfCollisions(fcl::CollisionResult<double> result) {
+  std::vector<fcl::Contact<double>> collisionContacts;
+
+  result.getContacts(collisionContacts);
+  if(collisionContacts.size() > 0) {
+    std::cout << "Number of collisions: " << collisionContacts.size() << std::endl;
+    for(int i=0; i<collisionContacts.size(); i++) {
+      fcl::Contact<double> con = collisionContacts[i];
+      std::cout << "Collision between joint ";
+      std::cout << ((CollisionLink<double>*)con.o1->getUserData())->link1 << "-" << ((CollisionLink<double>*)con.o1->getUserData())->link2 << std::endl;
+      std::cout << " and joint ";
+      std::cout << ((CollisionLink<double>*)con.o2->getUserData())->link1 << "-" << ((CollisionLink<double>*)con.o2->getUserData())->link2 << std::endl;
+      
+
+      std::cout << "Penetration depth: " << con.penetration_depth << 
+                  " \nwith vector from link1 to link2 being: \n" << con.normal <<
+                  " \nat position " << con.pos << std::endl << std::endl;    
+    }
+  }
+  else{
+    std::cout << "No self collisions" << std::endl;
+  }
+  std::cout << std::endl;
+}
+
 
 /**
  * Standard testing program
@@ -175,13 +203,6 @@ void standardProgram(void) {
 
   m_q[NUM_QDOT] = 1.0;
 
-  RobotCollisionChecker<double> *valkyrie_collision_checker = new RobotCollisionChecker<double>(m_q, m_qdot);
-  std::cout << "Robot collision Checker generated" << std::endl;
-  valkyrie_collision_checker->generateRobotCollisionModel();
-  std::cout << "Valkyrie FCL Model Constructed" << std::endl;
-
-  
-
   // temporary declaration so the callback doesn't crash because it deletes when called
   // Also makes sure that the program doesn't crash if marker isn't launched
   colliderObstacle = generateObstacle(sejong::Vect3(100, 100, 100), .25);
@@ -190,6 +211,19 @@ void standardProgram(void) {
   ros::Subscriber sub = n.subscribe("interactiveMarker", 10, colliderCallback); // Update internal FCL object for the interactive marker
   ros::Subscriber sub2 = n.subscribe("/val_robot/joint_states", 10, jointStateCallback); // update internal variable for joint_q
   ros::Rate r(NODE_RATE);
+
+  // Wait for a message from the robot model
+  while(!jStatesUpdated){
+    ros::spinOnce();
+  }
+
+  RobotCollisionChecker<double> *valkyrie_collision_checker = new RobotCollisionChecker<double>(m_q, m_qdot);
+  std::cout << "Robot collision Checker generated" << std::endl;
+  valkyrie_collision_checker->generateRobotCollisionModel();
+  std::cout << "Valkyrie FCL Model Constructed" << std::endl;
+
+  
+
 
 
 
@@ -214,13 +248,17 @@ void standardProgram(void) {
     valkyrie_collision_checker->updateQ(m_q);
     valkyrie_collision_checker->generateRobotCollisionModel();
 
-    fcl::CollisionResult<double> val_collision_result = valkyrie_collision_checker->collideWith(colliderObstacle);
-    // std::vector<fcl::Contact<double>> collisionContacts = valkyrie_collision_checker->collideWith(colliderObstacle);
+    // Collide with object
+    fcl::CollisionResult<double> val_obj_collision_result = valkyrie_collision_checker->collideWith(colliderObstacle);
     double distance = valkyrie_collision_checker->distanceTo(colliderObstacle);
+    
+    // Collide with self
+    fcl::CollisionResult<double> val_self_collision_result = valkyrie_collision_checker->collideSelf();
 
     #if DEBUG
     std::cout << "Distance to object is " << distance << std::endl;
-    printCollisions(val_collision_result);
+    printObjCollisions(val_obj_collision_result);
+    printSelfCollisions(val_self_collision_result);
     #endif
     
     r.sleep();
