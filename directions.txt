@@ -7,11 +7,6 @@ OBB = oriented bounding box
 RSS - rectangle sphere swept bounding volume
 SAP - sweep and prune
 
-General Notes about FCL functionality:
-FCL surrounds a cylinder with a hexagonal prism to find collisions
-I think fcl will automatically delete collision objects when the collision manager is cleared. If an out of memory exception occurs, it might be the CollisionLink not properly deallocating the collision object
-I update the robot_model within the updating of the collision model. This shouldn't be a problem but may be redundant
-I ignore any self collision with the torso
 
 
 TODO List:
@@ -21,9 +16,10 @@ fix the freaking collision link types
 I don't know why there are multiple collisions for the torso box
 I don't know why the torso sometimes doesn't register properly
 
-What doesn't translate correctly:
-Some configurations are really inaccurate, just try pressing the randomize button
-
 Updates:
     1. I don't know how to do a nice cartesian product but I can return the distance
     2. The rotation works better as a post multiply
+    3. The arms and legs rotate properly now, kinda
+    4. Self collision works
+    5. dynamically updates from the valkyrie model
+    6. Some configurations (with the legs) are really inaccurate but I can't really fix that

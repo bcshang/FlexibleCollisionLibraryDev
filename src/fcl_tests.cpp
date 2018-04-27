@@ -190,33 +190,33 @@ void standardProgram(void) {
   jointName2ID.insert(std::make_pair("rightElbowPitch", 26));
   jointName2ID.insert(std::make_pair("rightForearmYaw", 27));
 
-
-
-  // Start ROS things
-  ros::NodeHandle n;
-
-
-  // Get Valkyrie information
+  // Setup Valkyrie information
   // This is done early because Valkyrie will sometimes lose its body otherwise
   m_q.resize(NUM_Q); m_q.setZero();
   sejong::Vector m_qdot; m_qdot.resize(NUM_QDOT); m_qdot.setZero();
 
   m_q[NUM_QDOT] = 1.0;
 
+
+
   // temporary declaration so the callback doesn't crash because it deletes when called
   // Also makes sure that the program doesn't crash if marker isn't launched
   colliderObstacle = generateObstacle(sejong::Vect3(100, 100, 100), .25);
+
+  // Start ROS things
+  ros::NodeHandle n;
 
   ros::Publisher marker_pub = n.advertise<visualization_msgs::MarkerArray>("visualization_marker_array", 10); // Publish markers to RVIZ
   ros::Subscriber sub = n.subscribe("interactiveMarker", 10, colliderCallback); // Update internal FCL object for the interactive marker
   ros::Subscriber sub2 = n.subscribe("/val_robot/joint_states", 10, jointStateCallback); // update internal variable for joint_q
   ros::Rate r(NODE_RATE);
 
-  // Wait for a message from the robot model
+  // Wait for a message from the robot model to update m_q
   while(!jStatesUpdated){
     ros::spinOnce();
   }
 
+  // Start the collision model
   RobotCollisionChecker<double> *valkyrie_collision_checker = new RobotCollisionChecker<double>(m_q, m_qdot);
   std::cout << "Robot collision Checker generated" << std::endl;
   valkyrie_collision_checker->generateRobotCollisionModel();
@@ -230,8 +230,9 @@ void standardProgram(void) {
   std::cout << "ROS Loop start" << std::endl;
   while(ros::ok()) {    
     ros::spinOnce();
-    #if SHOWMARKERS
+
     // Visualization markers for the FCL objects
+    #if SHOWMARKERS
     std::vector<visualization_msgs::Marker> markerVector; 
     markerVector = valkyrie_collision_checker->generateMarkers();
     // Set up array markers message
@@ -245,6 +246,7 @@ void standardProgram(void) {
     marker_pub.publish(markerArray); 
     #endif
     
+    // update valkyrie's model
     valkyrie_collision_checker->updateQ(m_q);
     valkyrie_collision_checker->generateRobotCollisionModel();
 

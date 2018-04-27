@@ -11,7 +11,7 @@
 #include <iostream>
 
 /**
- * Actually use this constructor please
+ * Main constructor
  */
 template <typename S>
 RobotCollisionChecker<S>::RobotCollisionChecker(sejong::Vector m_q, sejong::Vector m_qdot){
@@ -51,6 +51,7 @@ RobotCollisionChecker<S>::RobotCollisionChecker(sejong::Vector m_q, sejong::Vect
   torsoJoints.push_back(SJLinkID::LK_upperNeckPitchLink);
 
   // Populate all joints as collision link objects (class I defined)
+  // Update unique marker numbers
   for(int i=0; i<rightArmJoints.size()-1; i++){
     collisionLinks.push_back(CollisionLink<S>(rightArmJoints[i], rightArmJoints[i+1], CLT_appendage_right_arm, markerNumber++));
   }
@@ -104,7 +105,7 @@ void RobotCollisionChecker<S>::updateQ_Dot(sejong::Vector m_qdot){
 template <typename S>
 void RobotCollisionChecker<S>::generateRobotCollisionModel() {
   robot_env.clear();
-  // This will also delete all collision objects so deletion within the collisionlink class is not necessary
+  // This will also delete all collision objects so deletion within the collisionlink class is not necessary (probably)
   robotCollisionModel->clear();
 
 
@@ -188,8 +189,12 @@ fcl::CollisionResult<S> RobotCollisionChecker<S>::collideWith(fcl::CollisionObje
   return colData.result;
 }
 
-
-// self collision
+/**
+ * Self collision function
+ * @return result of the self collision, trimmed of links that are adjacent because of how we draw the objects
+ *
+ * In my experience, there is no consistency for what order the collisions are returned
+ */
 template <typename S>
 fcl::CollisionResult<S> RobotCollisionChecker<S>::collideSelf(){
   fcl::test::CollisionData<double> colData;
@@ -197,7 +202,9 @@ fcl::CollisionResult<S> RobotCollisionChecker<S>::collideSelf(){
   colData.request.enable_contact = true;
   robotCollisionModel->collide(&colData, fcl::test::defaultCollisionFunction);
 
-  // We need to ignore any collisions with links that share a joint
+  ////////////////////////////////////////////////////////////////////
+  // We need to ignore any collisions with links that share a joint //
+  ////////////////////////////////////////////////////////////////////
   std::vector<fcl::Contact<S>> originalContacts;
   colData.result.getContacts(originalContacts);
   // std::cout << "Original contacts size: " << originalContacts.size() << std::endl;
@@ -308,10 +315,40 @@ double RobotCollisionChecker<S>::distanceTo(fcl::CollisionObject<S>* obj){
   
   robotCollisionModel->distance(obj, &distData, fcl::test::defaultDistanceFunction);
 
-
   return distData.result.min_distance;
-
 }
 
+
+/**
+ * Distance between objects internal to the manager
+ * I will just demonstrate how to extract relevant data
+ */
+template<typename S>
+void RobotCollisionChecker<S>::distanceSelf(){
+
+  // Get the collision objects from the manager
+  std::vector<CollisionObject<S>*> robotColObjs;
+  robotCollisionModel->getObjects(robotColObjs);
+
+  // From here you can look for a specific joint
+  // Remember the collision object index
+  CollisionLink<S> colLink = robotColObjs[0]->getUserData();
+
+  // Find out what the link is
+  int link1 = colLink.link1;
+  int link2 = colLink.link2;
+
+  // Repeat for the next one   
+  
+  // Declare a distance request
+  fcl::test::DistanceData<double> distData;
+  distData.request.enable_signed_distance = true;
+  distData.request.enable_nearest_points = true;
+  distData.request.gjk_solver_type = fcl::GST_LIBCCD;
+
+  // Distance request and result are within the DistanceData type
+  // double dist = distance (const CollisionObject *o1, const CollisionObject *o2, const DistanceRequest &request, DistanceResult &result)
+  // return dist
+}
 
 #endif

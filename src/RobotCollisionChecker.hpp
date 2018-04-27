@@ -75,7 +75,12 @@ public:
    */
   fcl::CollisionResult<S> collideWith(fcl::CollisionObject<S>* obj);
 
-  // self collision
+  /**
+   * Self collision function
+   * @return result of the self collision, trimmed of links that are adjacent because of how we draw the objects
+   *
+   * In my experience, there is no consistency for what order the collisions are returned
+   */
   fcl::CollisionResult<S> collideSelf(void);
 
   /**
@@ -84,6 +89,12 @@ public:
    * @return the minimum distance to the object (can be negative)
    */
   double distanceTo(fcl::CollisionObject<S>* obj);
+
+  /**
+   * TODO This doesn't really do anything at this point
+   * please view the actual function definition for how to use
+   */
+  void distanceSelf();
 
   // Update internal variables
   void updateQ(sejong::Vector m_q);
