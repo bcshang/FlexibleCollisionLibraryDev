@@ -108,7 +108,7 @@ void printObjCollisions(fcl::CollisionResult<double> result) {
 
   result.getContacts(collisionContacts);
   if(collisionContacts.size() > 0) {
-    std::cout << "Number of collisions: " << collisionContacts.size() << std::endl;
+    std::cout << "Number of obj collisions: " << collisionContacts.size() << std::endl;
     for(int i=0; i<collisionContacts.size(); i++) {
       fcl::Contact<double> con = collisionContacts[i];
       std::cout << "Collision Between: ";
@@ -132,7 +132,7 @@ void printSelfCollisions(fcl::CollisionResult<double> result) {
 
   result.getContacts(collisionContacts);
   if(collisionContacts.size() > 0) {
-    std::cout << "Number of collisions: " << collisionContacts.size() << std::endl;
+    std::cout << "Number of self collisions: " << collisionContacts.size() << std::endl;
     for(int i=0; i<collisionContacts.size(); i++) {
       fcl::Contact<double> con = collisionContacts[i];
       std::cout << "Collision between joint ";

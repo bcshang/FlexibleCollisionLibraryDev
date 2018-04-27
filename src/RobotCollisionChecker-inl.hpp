@@ -327,7 +327,7 @@ template<typename S>
 void RobotCollisionChecker<S>::distanceSelf(){
 
   // Get the collision objects from the manager
-  std::vector<CollisionObject<S>*> robotColObjs;
+  std::vector<fcl::CollisionObject<S>*> robotColObjs;
   robotCollisionModel->getObjects(robotColObjs);
 
   // From here you can look for a specific joint
