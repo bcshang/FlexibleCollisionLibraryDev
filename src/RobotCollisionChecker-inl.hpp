@@ -38,13 +38,13 @@ RobotCollisionChecker<S>::RobotCollisionChecker(sejong::Vector m_q, sejong::Vect
   leftArmJoints.push_back(SJLinkID::LK_leftShoulderRollLink);
   leftArmJoints.push_back(SJLinkID::LK_leftElbowPitchLink);
 
-  rightLegJoints.push_back(SJLinkID::LK_rightCOP_Frame);
+  rightLegJoints.push_back(SJLinkID::LK_rightHipPitchLink);
   rightLegJoints.push_back(SJLinkID::LK_rightKneePitchLink);
-  rightLegJoints.push_back(SJLinkID::LK_rightHipYawLink);
+  rightLegJoints.push_back(SJLinkID::LK_rightCOP_Frame);
 
-  leftLegJoints.push_back(SJLinkID::LK_leftCOP_Frame);
+  leftLegJoints.push_back(SJLinkID::LK_leftHipPitchLink);
   leftLegJoints.push_back(SJLinkID::LK_leftKneePitchLink);
-  leftLegJoints.push_back(SJLinkID::LK_leftHipYawLink);
+  leftLegJoints.push_back(SJLinkID::LK_leftCOP_Frame);
 
   torsoJoints.push_back(SJLinkID::LK_torso);
   torsoJoints.push_back(SJLinkID::LK_neckYawLink);
@@ -129,8 +129,8 @@ void RobotCollisionChecker<S>::generateRobotCollisionModel() {
   // get hips to calculate height
   sejong::Vect3 temphip1;
   sejong::Vect3 temphip2;
-  robot_model->getPosition(robot_q, SJLinkID::LK_leftHipYawLink, temphip1);
-  robot_model->getPosition(robot_q, SJLinkID::LK_rightHipYawLink, temphip2);
+  robot_model->getPosition(robot_q, SJLinkID::LK_leftHipPitchLink, temphip1);
+  robot_model->getPosition(robot_q, SJLinkID::LK_rightHipPitchLink, temphip2);
   joint1Pos = calcMidpoint(temphip1, temphip2);
 
   // get the height of the object

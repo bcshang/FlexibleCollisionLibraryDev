@@ -156,8 +156,8 @@ fcl::CollisionObject<S>* CollisionLink<S>::computeCollisionObject(sejong::Vector
         // get hip points specially so that the box has full coverage
         sejong::Vect3 temphip1;
         sejong::Vect3 temphip2;
-        robot_model->getPosition(robot_q, SJLinkID::LK_leftHipYawLink, temphip1);
-        robot_model->getPosition(robot_q, SJLinkID::LK_rightHipYawLink, temphip2);
+        robot_model->getPosition(robot_q, SJLinkID::LK_leftHipPitchLink, temphip1);
+        robot_model->getPosition(robot_q, SJLinkID::LK_rightHipPitchLink, temphip2);
         joint1Pos = calcMidpoint(temphip1, temphip2);
     }
     else if(linkType == collisionLinkType::CLT_head){
