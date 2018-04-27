@@ -79,12 +79,15 @@ fcl::CollisionObject<double>* generateObstacle(sejong::Vect3 location, double si
 void colliderCallback(const geometry_msgs::Pose& msg) {
   // delete colliderObstacle->getUserData();
   delete colliderObstacle;
-  // need to fix for how fcl vs ros denotes markers
   colliderObstacle = generateObstacle(sejong::Vect3(msg.position.x, msg.position.y, msg.position.z), sizeBox);
 }
 
 
-
+/**
+ * Callback for the joint_state subscriber
+ * Will read relevant joints from the information and update global m_q accordingly
+ * @param robotJointStates joint_states as a ROS message from /val_robot/joint_states
+ */
 void jointStateCallback(const sensor_msgs::JointState robotJointStates) {
   std::cout << "Joint state callback" << std::endl;
   for(int i=0; i<robotJointStates.name.size(); i++) {
@@ -92,7 +95,6 @@ void jointStateCallback(const sensor_msgs::JointState robotJointStates) {
       m_q[jointName2ID[robotJointStates.name[i]] + NUM_VIRTUAL] = robotJointStates.position[i];
     }
   }
-  // std::cout << m_q << std::endl;
 }
 
 
@@ -109,7 +111,7 @@ void printCollisions(fcl::CollisionResult<double> result) {
     for(int i=0; i<collisionContacts.size(); i++) {
       fcl::Contact<double> con = collisionContacts[i];
       std::cout << "Collision Between: ";
-      std::cout << *((std::string*)con.o1->getUserData());
+      std::cout << *((std::string*)con.o1->getUserData()); // hard coded that the user data will be a string for the box
       std::cout << " and joint ";
       std::cout << ((CollisionLink<double>*)con.o2->getUserData())->link1 << "-" << ((CollisionLink<double>*)con.o2->getUserData())->link2 << std::endl;
       std::cout << "Penetration depth: " << con.penetration_depth << 
@@ -129,7 +131,8 @@ void printCollisions(fcl::CollisionResult<double> result) {
 void standardProgram(void) {
   boxString = new std::string("box");
 
-  // Build joint table
+  // Build joint table for updating joint states
+  // Does not account for virtual joints
   jointName2ID.insert(std::make_pair("leftHipYaw", 0));
   jointName2ID.insert(std::make_pair("leftHipRoll", 1));
   jointName2ID.insert(std::make_pair("leftHipPitch", 2));
@@ -179,18 +182,18 @@ void standardProgram(void) {
 
   
 
-  // temporary declaration so the callback doesn't crash
+  // temporary declaration so the callback doesn't crash because it deletes when called
+  // Also makes sure that the program doesn't crash if marker isn't launched
   colliderObstacle = generateObstacle(sejong::Vect3(100, 100, 100), .25);
 
   ros::Publisher marker_pub = n.advertise<visualization_msgs::MarkerArray>("visualization_marker_array", 10); // Publish markers to RVIZ
   ros::Subscriber sub = n.subscribe("interactiveMarker", 10, colliderCallback); // Update internal FCL object for the interactive marker
-  ros::Subscriber sub2 = n.subscribe("/val_robot/joint_states", 10, jointStateCallback); 
+  ros::Subscriber sub2 = n.subscribe("/val_robot/joint_states", 10, jointStateCallback); // update internal variable for joint_q
   ros::Rate r(NODE_RATE);
 
 
 
   std::cout << "ROS Loop start" << std::endl;
-  int i = 0;
   while(ros::ok()) {    
     ros::spinOnce();
     #if SHOWMARKERS
@@ -214,9 +217,12 @@ void standardProgram(void) {
     fcl::CollisionResult<double> val_collision_result = valkyrie_collision_checker->collideWith(colliderObstacle);
     // std::vector<fcl::Contact<double>> collisionContacts = valkyrie_collision_checker->collideWith(colliderObstacle);
     double distance = valkyrie_collision_checker->distanceTo(colliderObstacle);
+
+    #if DEBUG
     std::cout << "Distance to object is " << distance << std::endl;
     printCollisions(val_collision_result);
-
+    #endif
+    
     r.sleep();
   }
 

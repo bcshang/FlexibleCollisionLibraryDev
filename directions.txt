@@ -13,7 +13,6 @@ I think fcl will automatically delete collision objects when the collision manag
 I update the robot_model within the updating of the collision model. This shouldn't be a problem but may be redundant
 
 TODO List:
-allow for updating of joints
 check distance between robot links
 collide with self - for this, ignore any that have a similar joint number
 figure out how to make an item without using new
@@ -21,8 +20,14 @@ fix the freaking collision link types
 write an update
 I don't know why there are multiple collisions for the torso box
 I don't know why the torso sometimes doesn't register properly
-test orientation of the legs
+fix the orientation transformations
 
+What doesn't translate correctly:
+elbow pitch changes the arm for some reason
+knee pitch
+torso pitch
+torso yaw
 
 Updates:
     1. I don't know how to do a nice cartesian product but I can return the distance
+    2. The rotation works better as a post multiply

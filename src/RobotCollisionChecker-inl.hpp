@@ -32,10 +32,10 @@ RobotCollisionChecker<S>::RobotCollisionChecker(sejong::Vector m_q, sejong::Vect
 
   // Initialize joint lists
   // Arms are missing hand joints
+  rightArmJoints.push_back(SJLinkID::LK_rightShoulderRollLink);
   rightArmJoints.push_back(SJLinkID::LK_rightElbowPitchLink);
-  rightArmJoints.push_back(SJLinkID::LK_rightShoulderPitchLink);
 
-  leftArmJoints.push_back(SJLinkID::LK_leftShoulderPitchLink);
+  leftArmJoints.push_back(SJLinkID::LK_leftShoulderRollLink);
   leftArmJoints.push_back(SJLinkID::LK_leftElbowPitchLink);
 
   rightLegJoints.push_back(SJLinkID::LK_rightCOP_Frame);

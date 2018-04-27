@@ -63,17 +63,17 @@ fcl::CollisionObject<S>* CollisionLink<S>::computeCollisionObject(sejong::Vector
         extraRot << 1, 0, 0,
                     0, 0, -1,
                     0, 1, 0;
-        rotation = extraRot * rotation;
+        rotation = rotation * extraRot;
     }
     else if(linkType == collisionLinkType::CLT_appendage_left_arm) {
-        rotation = joint2Orien.normalized().toRotationMatrix();
+        rotation = joint1Orien.normalized().toRotationMatrix();
         Eigen::Matrix3d extraRot; // needed because arms are based around y axis
         // rotate -90 degrees about x axis
         extraRot << 1, 0, 0,
                     0, 0, 1,
                     0, -1, 0;
 
-        rotation = extraRot * rotation;
+        rotation = rotation * extraRot;
     }
     else if(linkType == collisionLinkType::CLT_appendage_leg) {
         rotation = joint1Orien.normalized().toRotationMatrix();
@@ -130,7 +130,6 @@ fcl::CollisionObject<S>* CollisionLink<S>::computeCollisionObject(sejong::Vector
     jointMarker.pose.orientation.y = finalJointOrientation.y();
     jointMarker.pose.orientation.z = finalJointOrientation.z();
     jointMarker.pose.orientation.w = finalJointOrientation.w();
-    // std::cout << "Marker orientation is" << jointMarker.pose.orientation << std::endl;
     #endif
 
     
@@ -154,7 +153,7 @@ fcl::CollisionObject<S>* CollisionLink<S>::computeCollisionObject(sejong::Vector
     robot_model->getOrientation(robot_q, link1, joint1Orien);
 
     if(linkType == collisionLinkType::CLT_torso){
-        // get hip points specially
+        // get hip points specially so that the box has full coverage
         sejong::Vect3 temphip1;
         sejong::Vect3 temphip2;
         robot_model->getPosition(robot_q, SJLinkID::LK_leftHipYawLink, temphip1);
@@ -169,7 +168,6 @@ fcl::CollisionObject<S>* CollisionLink<S>::computeCollisionObject(sejong::Vector
 
 
     sejong::Vect3 fcl_position = calcMidpoint(joint1Pos, joint2Pos);
-    fcl_position[x] -= torsoDepth / 2;
 
     Eigen::Matrix3d rotation = joint1Orien.normalized().toRotationMatrix();
     
@@ -203,13 +201,9 @@ fcl::CollisionObject<S>* CollisionLink<S>::computeCollisionObject(sejong::Vector
     collisionObj->setQuatRotation(finalJointOrientation);
 
 
-    // Create marker if desired, need to fix this
+    // Create marker if desired
     #if SHOWMARKERS
     jointMarker = createBox(x_size, y_size, z_size, markerID);
-    // std::cout << "sizes" << std::endl;
-    // std::cout << x_size << std::endl;
-    // std::cout << y_size << std::endl;
-    // std::cout << z_size << std::endl;
 
     jointMarker.pose.position.x = fcl_position[0];
     jointMarker.pose.position.y = fcl_position[1];
@@ -219,8 +213,6 @@ fcl::CollisionObject<S>* CollisionLink<S>::computeCollisionObject(sejong::Vector
     jointMarker.pose.orientation.y = finalJointOrientation.y();
     jointMarker.pose.orientation.z = finalJointOrientation.z();
     jointMarker.pose.orientation.w = finalJointOrientation.w();
-    // std::cout << jointMarker << std::endl;
-    // sejong::pretty_print(fcl_position, std::cout, "fcl_position");
     #endif
 
     return collisionObj;
